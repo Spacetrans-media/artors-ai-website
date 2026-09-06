@@ -1,0 +1,199 @@
+/* ============================================================
+   JESSICA'S FACE
+   Depth without WebGL. Every animation below runs on transform
+   or opacity only, so nothing here touches layout or paint —
+   it stays on the compositor even on a cheap Android.
+   ============================================================ */
+
+.stage {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* A little perspective so the hover tilt reads as a tilt rather than a skew. */
+  perspective: 320px;
+}
+
+.bot {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ---------- the idle float ---------------------------------------------- */
+
+.head {
+  animation: float 4.2s ease-in-out infinite;
+  transform-origin: 60px 60px;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  30% {
+    transform: translateY(-3.5px) rotate(-1.4deg);
+  }
+  70% {
+    transform: translateY(-2px) rotate(1.4deg);
+  }
+}
+
+/* The shadow tightens as she rises. This is most of what sells the height. */
+.shadow {
+  opacity: 0.16;
+  transform-origin: 60px 99px;
+  animation: shadow 4.2s ease-in-out infinite;
+  filter: blur(2.5px);
+}
+
+@keyframes shadow {
+  0%,
+  100% {
+    transform: scaleX(1);
+    opacity: 0.16;
+  }
+  30% {
+    transform: scaleX(0.84);
+    opacity: 0.09;
+  }
+  70% {
+    transform: scaleX(0.92);
+    opacity: 0.12;
+  }
+}
+
+/* ---------- antennae and pods, out of phase ----------------------------- */
+
+.earLeft,
+.earRight {
+  transform-origin: 60px 30px;
+  animation: float 4.2s ease-in-out infinite;
+}
+
+.podLeft {
+  transform-origin: 16px 62px;
+  animation: bobA 3.4s ease-in-out infinite;
+}
+
+.podRight {
+  transform-origin: 104px 62px;
+  animation: bobB 3.9s ease-in-out infinite;
+}
+
+@keyframes bobA {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-6deg);
+  }
+  50% {
+    transform: translateY(-5px) rotate(4deg);
+  }
+}
+
+@keyframes bobB {
+  0%,
+  100% {
+    transform: translateY(-3px) rotate(6deg);
+  }
+  50% {
+    transform: translateY(2px) rotate(-4deg);
+  }
+}
+
+/* ---------- the blink --------------------------------------------------- */
+
+/* Squashing the whole face group rather than each eye keeps the mouth
+   anchored, which is what a real blink looks like. */
+.eye {
+  transform-origin: center;
+  animation: blink 5.6s ease-in-out infinite;
+}
+
+.eye:nth-of-type(2) {
+  /* A few milliseconds apart. Perfectly synchronised eyes look mechanical. */
+  animation-delay: 0.04s;
+}
+
+@keyframes blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.12);
+  }
+}
+
+.face {
+  transform-origin: 60px 50px;
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mouth {
+  transform-origin: 60px 58px;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ---------- reactions --------------------------------------------------- */
+
+/* Hover: she leans in and grins. Triggered from the launcher, so hovering
+   anywhere on the button reacts, not just the 40 pixels of face. */
+:global(.jessicaLauncher):hover .bot {
+  transform: rotateY(-10deg) rotateX(6deg) scale(1.06);
+}
+
+:global(.jessicaLauncher):hover .mouth {
+  transform: scale(1.35);
+}
+
+:global(.jessicaLauncher):active .bot {
+  transform: rotateY(-4deg) scale(0.97);
+}
+
+/* A single wave when she first appears — one gesture, then she settles. */
+.stage[data-waving] .podRight {
+  animation: wave 0.9s ease-in-out 2;
+}
+
+@keyframes wave {
+  0%,
+  100% {
+    transform: translateY(-3px) rotate(6deg);
+  }
+  25% {
+    transform: translateY(-11px) rotate(-26deg);
+  }
+  60% {
+    transform: translateY(-9px) rotate(16deg);
+  }
+}
+
+/* ---------- reduced motion ---------------------------------------------- */
+
+/* She still exists, she just stops moving. The shadow is pinned to its
+   resting size so she does not sit at a height nothing explains. */
+@media (prefers-reduced-motion: reduce) {
+  .head,
+  .shadow,
+  .earLeft,
+  .earRight,
+  .podLeft,
+  .podRight,
+  .eye,
+  .stage[data-waving] .podRight {
+    animation: none;
+  }
+  .bot,
+  .face,
+  .mouth {
+    transition: none;
+  }
+  .shadow {
+    opacity: 0.16;
+  }
+}

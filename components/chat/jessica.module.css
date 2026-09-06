@@ -6,65 +6,160 @@
    and gets out of the way on mobile.
    ============================================================ */
 
-.launcher {
+.dock {
   position: fixed;
   right: 20px;
   bottom: 20px;
   z-index: 90;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 12px 18px 12px 14px;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--paper);
-  background: var(--ink);
-  border: 0;
-  border-radius: 999px;
-  cursor: pointer;
-  box-shadow: 0 2px 6px rgba(10, 10, 10, 0.14), 0 14px 34px -14px rgba(10, 10, 10, 0.5);
-  transition: background var(--dur-btn) var(--ease-btn), transform var(--dur-btn) var(--ease-btn);
+  gap: 12px;
 }
-.launcher:hover {
-  background: var(--accent);
-  transform: translateY(-1px);
-}
-.launcher[data-open="true"] {
+.dock[data-open] {
   opacity: 0;
   pointer-events: none;
 }
 
-/* Her initial, not a robot icon. She is presented as a person answering. */
-.avatar {
+/* ---------- the launcher ------------------------------------------------ */
+
+/* No solid fill. She is the button — a dark disc behind her would flatten the
+   lighting the face is drawn with and lose the whole effect. */
+.launcher {
+  position: relative;
+  width: 78px;
+  height: 72px;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The green dot. The single most load-bearing pixel here: "online" is what
+   makes someone try a chat widget at all. */
+.presence {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 2.5px var(--paper);
+}
+.presence::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: pulse 2.6s ease-out infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 0.7; }
+  70% { transform: scale(2.6); opacity: 0; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+
+/* ---------- the greeting ------------------------------------------------ */
+
+.greeting {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  max-width: 250px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 2px 6px rgba(10, 10, 10, 0.05), 0 18px 40px -20px rgba(10, 10, 10, 0.4);
+  animation: bubbleIn 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: right center;
+}
+
+@keyframes bubbleIn {
+  from { opacity: 0; transform: translateX(14px) scale(0.94); }
+  to { opacity: 1; transform: none; }
+}
+
+/* The whole bubble opens the chat — a bubble that only looks clickable is a
+   dead end people click twice and then ignore. */
+.greetingBody {
+  display: block;
+  padding: 13px 8px 14px 15px;
+  font-family: inherit;
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.greetingTitle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.online {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  flex-shrink: 0;
+}
+
+.greetingText {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+.greetingClose {
+  flex-shrink: 0;
   display: grid;
   place-items: center;
   width: 26px;
   height: 26px;
-  font-size: 12px;
-  font-weight: 700;
+  margin: 7px 7px 0 0;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: color var(--dur-btn) var(--ease-btn), background var(--dur-btn) var(--ease-btn);
+}
+.greetingClose:hover {
   color: var(--ink);
-  background: var(--paper);
-  border-radius: 50%;
-  flex-shrink: 0;
+  background: var(--line-soft);
+}
+.greetingClose svg {
+  width: 9px;
+  height: 9px;
 }
 
-/* A quiet pulse, three times, so the launcher is noticed without nagging. */
-.ping {
+/* The little tail pointing at her. */
+.greeting::after {
+  content: "";
   position: absolute;
-  top: 9px;
-  right: 15px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--accent);
-  animation: ping 2.4s ease-out 3;
-}
-@keyframes ping {
-  0% { transform: scale(1); opacity: 0.9; }
-  70% { transform: scale(2.4); opacity: 0; }
-  100% { transform: scale(2.4); opacity: 0; }
+  right: -6px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  margin-top: -5px;
+  background: var(--paper);
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  transform: rotate(-45deg);
+  border-radius: 0 0 3px 0;
 }
 
 /* ---------- panel ------------------------------------------------------ */
@@ -100,15 +195,9 @@
 }
 
 .headAvatar {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--paper);
-  background: var(--ink);
-  border-radius: 50%;
+  display: block;
+  width: 42px;
+  height: 38px;
   flex-shrink: 0;
 }
 
@@ -377,10 +466,26 @@
 /* ---------- mobile: a sheet, not a floating card ----------------------- */
 
 @media (max-width: 520px) {
+  .dock {
+    right: 12px;
+    bottom: 12px;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+  }
+  .greeting {
+    max-width: min(230px, calc(100vw - 40px));
+  }
+  /* The tail moves to the bottom edge once the bubble sits above her. */
+  .greeting::after {
+    right: 26px;
+    top: auto;
+    bottom: -6px;
+    margin-top: 0;
+  }
   .launcher {
-    right: 14px;
-    bottom: 14px;
-    padding: 11px 16px 11px 12px;
+    width: 68px;
+    height: 63px;
   }
   .panel {
     right: 0;
@@ -393,11 +498,15 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .launcher,
   .panel,
-  .ping,
+  .greeting,
+  .presence::after,
   .dots span {
     animation: none;
     transition: none;
+  }
+  /* The pulse ring is decoration; the dot itself still says "online". */
+  .presence::after {
+    display: none;
   }
 }

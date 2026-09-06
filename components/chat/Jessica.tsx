@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
+import BotFace from "./BotFace";
 import s from "./jessica.module.css";
 
 /**
@@ -36,6 +37,16 @@ const CHIPS = [
 ];
 
 const STORAGE_KEY = "artors.jessica.v1";
+const GREETED_KEY = "artors.jessica.greeted";
+
+/**
+ * How long before she says hello.
+ *
+ * Long enough that the visitor has read the headline and formed a first
+ * impression, short enough that they have not left. Three seconds is the
+ * common choice and is too fast — it interrupts the sentence they are reading.
+ */
+const GREETING_DELAY_MS = 5200;
 
 function newSessionKey(): string {
   // crypto.randomUUID is not available on http:// origins in some browsers,
@@ -55,6 +66,8 @@ export default function Jessica() {
   const [action, setAction] = useState<Intent | null>(null);
   const [captured, setCaptured] = useState(false);
   const [sessionKey, setSessionKey] = useState("");
+  const [greeting, setGreeting] = useState(false);
+  const [waving, setWaving] = useState(false);
 
   const streamRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -93,6 +106,34 @@ export default function Jessica() {
     if (!open) return;
     streamRef.current?.scrollTo({ top: streamRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, sending, action, open]);
+
+  /**
+   * She says hello once per tab, and only once.
+   *
+   * A bubble that reappears on every page is the reason people hate these,
+   * so the flag is written the moment it shows rather than when it is
+   * dismissed — navigating away mid-greeting still counts as having greeted.
+   */
+  useEffect(() => {
+    if (open) return;
+    try {
+      if (sessionStorage.getItem(GREETED_KEY)) return;
+    } catch {
+      return; // storage blocked: better to stay quiet than to nag every page
+    }
+    const id = setTimeout(() => {
+      setGreeting(true);
+      setWaving(true);
+      try {
+        sessionStorage.setItem(GREETED_KEY, "1");
+      } catch {
+        /* nothing to do */
+      }
+      // Stop waving after the gesture finishes so she settles into the idle.
+      setTimeout(() => setWaving(false), 2000);
+    }, GREETING_DELAY_MS);
+    return () => clearTimeout(id);
+  }, [open]);
 
   // Escape closes, matching the lead modal.
   useEffect(() => {
@@ -156,29 +197,58 @@ export default function Jessica() {
 
   return (
     <>
-      <button
-        type="button"
-        className={s.launcher}
-        data-open={open}
-        onClick={() => {
-          setOpen(true);
-          setTimeout(() => inputRef.current?.focus(), 80);
-        }}
-        aria-label="Chat with Jessica"
-        aria-expanded={open}
-      >
-        <span className={s.avatar} aria-hidden="true">
-          J
-        </span>
-        Ask Jessica
-        {messages.length === 1 && <span className={s.ping} aria-hidden="true" />}
-      </button>
+      <div className={s.dock} data-open={open || undefined}>
+        {greeting && (
+          <div className={s.greeting}>
+            <button
+              type="button"
+              className={s.greetingBody}
+              onClick={() => {
+                setGreeting(false);
+                setOpen(true);
+                setTimeout(() => inputRef.current?.focus(), 80);
+              }}
+            >
+              <span className={s.greetingTitle}>
+                <span className={s.online} aria-hidden="true" />
+                I am online
+              </span>
+              <span className={s.greetingText}>Hi — ask me anything about Artors.</span>
+            </button>
+            <button
+              type="button"
+              className={s.greetingClose}
+              onClick={() => setGreeting(false)}
+              aria-label="Dismiss"
+            >
+              <svg viewBox="0 0 10 10" stroke="currentColor" strokeWidth={1.6} fill="none">
+                <path d="M1 1l8 8M9 1L1 9" />
+              </svg>
+            </button>
+          </div>
+        )}
+
+        <button
+          type="button"
+          className={`${s.launcher} jessicaLauncher`}
+          onClick={() => {
+            setGreeting(false);
+            setOpen(true);
+            setTimeout(() => inputRef.current?.focus(), 80);
+          }}
+          aria-label="Chat with Jessica"
+          aria-expanded={open}
+        >
+          <BotFace waving={waving} />
+          <span className={s.presence} aria-hidden="true" />
+        </button>
+      </div>
 
       {open && (
         <div className={s.panel} role="dialog" aria-label="Chat with Jessica">
           <div className={s.head}>
-            <span className={s.headAvatar} aria-hidden="true">
-              J
+            <span className={s.headAvatar}>
+              <BotFace />
             </span>
             <div className={s.headText}>
               <p className={s.headName}>Jessica</p>
