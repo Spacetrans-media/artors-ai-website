@@ -37,16 +37,45 @@ const CHIPS = [
 ];
 
 const STORAGE_KEY = "artors.jessica.v1";
-const GREETED_KEY = "artors.jessica.greeted";
+
+/**
+ * Whether this person has ever been greeted — localStorage, not session.
+ *
+ * The distinction is the whole behaviour. A first-time visitor does not know
+ * there is an assistant here, so she introduces herself. Someone who has been
+ * before already knows, and greeting them again on every visit is how a
+ * helpful widget turns into an irritating one.
+ */
+const SEEN_KEY = "artors.jessica.seen";
 
 /**
  * How long before she says hello.
  *
- * Long enough that the visitor has read the headline and formed a first
+ * Long enough that the visitor has taken in the headline and formed a first
  * impression, short enough that they have not left. Three seconds is the
  * common choice and is too fast — it interrupts the sentence they are reading.
  */
-const GREETING_DELAY_MS = 5200;
+const GREETING_DELAY_MS = 4000;
+
+/** Reads a flag without throwing where storage is blocked or full. */
+function hasSeen(): boolean {
+  try {
+    return localStorage.getItem(SEEN_KEY) === "1";
+  } catch {
+    // Private windows and locked-down browsers throw on access. Treating that
+    // as "never seen" is the right failure: a new visitor still gets greeted,
+    // and the cost of being wrong is one bubble.
+    return false;
+  }
+}
+
+function markSeen(): void {
+  try {
+    localStorage.setItem(SEEN_KEY, "1");
+  } catch {
+    /* nothing to do; she simply greets again next time */
+  }
+}
 
 function newSessionKey(): string {
   // crypto.randomUUID is not available on http:// origins in some browsers,
@@ -108,27 +137,18 @@ export default function Jessica() {
   }, [messages, sending, action, open]);
 
   /**
-   * She says hello once per tab, and only once.
+   * A first-time visitor gets introduced to her. Once, ever.
    *
-   * A bubble that reappears on every page is the reason people hate these,
-   * so the flag is written the moment it shows rather than when it is
-   * dismissed — navigating away mid-greeting still counts as having greeted.
+   * The flag is written the moment the bubble shows rather than when it is
+   * dismissed, so moving to a second page mid-greeting still counts. A bubble
+   * that reappears on every page is exactly why people close these unread.
    */
   useEffect(() => {
-    if (open) return;
-    try {
-      if (sessionStorage.getItem(GREETED_KEY)) return;
-    } catch {
-      return; // storage blocked: better to stay quiet than to nag every page
-    }
+    if (open || hasSeen()) return;
     const id = setTimeout(() => {
       setGreeting(true);
       setWaving(true);
-      try {
-        sessionStorage.setItem(GREETED_KEY, "1");
-      } catch {
-        /* nothing to do */
-      }
+      markSeen();
       // Stop waving after the gesture finishes so she settles into the idle.
       setTimeout(() => setWaving(false), 2000);
     }, GREETING_DELAY_MS);
@@ -211,9 +231,11 @@ export default function Jessica() {
             >
               <span className={s.greetingTitle}>
                 <span className={s.online} aria-hidden="true" />
-                I am online
+                Ask Jessica
               </span>
-              <span className={s.greetingText}>Hi — ask me anything about Artors.</span>
+              <span className={s.greetingText}>
+                I am online — how can I help you today?
+              </span>
             </button>
             <button
               type="button"
