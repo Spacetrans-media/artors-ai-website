@@ -23,6 +23,8 @@ import "server-only";
  * that degrades to something honest beats one that 500s.
  */
 
+import { retrieve } from "./retrieve";
+
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 
 const SYSTEM = `You are a website assistant for the business described in the CONTEXT below.
@@ -47,6 +49,9 @@ function providerName(): Provider {
   if (process.env.ANTHROPIC_API_KEY) return "anthropic";
   if (process.env.OPENAI_API_KEY) return "openai";
   if (process.env.GEMINI_API_KEY) return "gemini";
+  // A self-hosted endpoint often needs no key at all, so the base URL alone
+  // is enough to say "there is a model here".
+  if (process.env.DEMO_BASE_URL) return "openai";
   return "mock";
 }
 
@@ -60,7 +65,13 @@ export async function answer(
   siteName: string,
 ): Promise<string> {
   const provider = providerName();
-  const system = `${SYSTEM}\n\nCONTEXT — the website of ${siteName}:\n\n${context}`;
+
+  // Only the passages that bear on this question. Sending the whole crawl on
+  // every turn burns a free tier's per-minute token budget on a single answer,
+  // and buries the relevant sentence in navigation text.
+  const question = messages.filter((m) => m.role === "user").pop()?.content ?? "";
+  const relevant = retrieve(context, question);
+  const system = `${SYSTEM}\n\nCONTEXT — the website of ${siteName}:\n\n${relevant}`;
 
   try {
     if (provider === "anthropic") return await viaAnthropic(system, messages);
@@ -126,11 +137,12 @@ async function viaGemini(system: string, messages: ChatMessage[]): Promise<strin
  */
 async function viaOpenAiCompatible(system: string, messages: ChatMessage[]): Promise<string> {
   const base = (process.env.DEMO_BASE_URL || "https://api.openai.com/v1").replace(/[/]+$/, "");
+  const key = process.env.OPENAI_API_KEY;
   const res = await fetch(`${base}/chat/completions`, {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      ...(key ? { authorization: `Bearer ${key}` } : {}),
     },
     body: JSON.stringify({
       model: process.env.DEMO_MODEL || "gpt-4o-mini",
