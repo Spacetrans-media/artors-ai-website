@@ -9,7 +9,13 @@ import "server-only";
  *
  *   anthropic  ANTHROPIC_API_KEY   best quality
  *   gemini     GEMINI_API_KEY      has a genuinely free tier — fine for a demo
+ *   openai     OPENAI_API_KEY      and ANY OpenAI-compatible endpoint
  *   mock       none                canned replies; exercises the whole pipeline
+ *
+ * The openai path is deliberately the widest door. Groq, Together, Fireworks,
+ * OpenRouter, DeepSeek, vLLM and local Ollama or LM Studio all speak the same
+ * /chat/completions shape, so pointing DEMO_BASE_URL at any of them works
+ * without another adapter. One provider, most of the market.
  *
  * MOCK is not a placeholder to be removed. It is how the crawler, the caps,
  * the rate limiting and the UI get tested without spending anything, and it is
@@ -31,10 +37,15 @@ Rules, in order:
    no marketing adjectives.
 5. Never mention the CONTEXT, the crawl, or that you are an AI model.`;
 
-function providerName(): "anthropic" | "gemini" | "mock" {
+type Provider = "anthropic" | "gemini" | "openai" | "mock";
+
+function providerName(): Provider {
   const forced = process.env.DEMO_PROVIDER?.toLowerCase();
-  if (forced === "anthropic" || forced === "gemini" || forced === "mock") return forced;
+  if (forced === "anthropic" || forced === "gemini" || forced === "openai" || forced === "mock") {
+    return forced;
+  }
   if (process.env.ANTHROPIC_API_KEY) return "anthropic";
+  if (process.env.OPENAI_API_KEY) return "openai";
   if (process.env.GEMINI_API_KEY) return "gemini";
   return "mock";
 }
@@ -54,6 +65,7 @@ export async function answer(
   try {
     if (provider === "anthropic") return await viaAnthropic(system, messages);
     if (provider === "gemini") return await viaGemini(system, messages);
+    if (provider === "openai") return await viaOpenAiCompatible(system, messages);
     return viaMock(context, messages);
   } catch (e) {
     console.error("[demo:provider-failed]", provider, e);
@@ -103,6 +115,33 @@ async function viaGemini(system: string, messages: ChatMessage[]): Promise<strin
   if (!res.ok) throw new Error(`gemini ${res.status}: ${await res.text()}`);
   const json = await res.json();
   return json.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "No answer came back.";
+}
+
+/**
+ * Any OpenAI-compatible /chat/completions endpoint.
+ *
+ * DEMO_BASE_URL retargets it: https://api.groq.com/openai/v1,
+ * https://openrouter.ai/api/v1, http://localhost:11434/v1 for Ollama, and so
+ * on. Only the base URL, the key and the model name change.
+ */
+async function viaOpenAiCompatible(system: string, messages: ChatMessage[]): Promise<string> {
+  const base = (process.env.DEMO_BASE_URL || "https://api.openai.com/v1").replace(/[/]+$/, "");
+  const res = await fetch(`${base}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: process.env.DEMO_MODEL || "gpt-4o-mini",
+      max_tokens: 400,
+      temperature: 0.3,
+      messages: [{ role: "system", content: system }, ...messages],
+    }),
+  });
+  if (!res.ok) throw new Error(`openai-compatible ${res.status}: ${await res.text()}`);
+  const json = await res.json();
+  return json.choices?.[0]?.message?.content?.trim() || "No answer came back.";
 }
 
 /**
