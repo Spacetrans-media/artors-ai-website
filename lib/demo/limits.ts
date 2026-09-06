@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, gte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 
 /**
@@ -63,7 +63,19 @@ export async function checkCrawlAllowed(ip: string): Promise<LimitVerdict> {
   }
 }
 
-/** Increments the message count and reports whether the session may continue. */
+/**
+ * Increments the message count and reports whether the session may continue.
+ *
+ * Scoped to the last 24 hours, like every other ceiling here. Without that
+ * window the row never expires and the cap stops being a session limit: the
+ * eighth question a visitor ever asks about a domain locks them out of it for
+ * good. That bites hardest on shared and CGNAT addresses — an office or a
+ * mobile carrier is one IP, so one person exhausting the demo would greet
+ * every colleague after them with "that is 8 questions" on their first.
+ *
+ * A day later they get a fresh session, which is what "per session" was always
+ * meant to mean.
+ */
 export async function consumeMessage(domain: string, ip: string): Promise<LimitVerdict> {
   const db = getDb();
   if (!db) return { ok: true };
@@ -72,7 +84,14 @@ export async function consumeMessage(domain: string, ip: string): Promise<LimitV
     const [row] = await db
       .select()
       .from(schema.demoSessions)
-      .where(and(eq(schema.demoSessions.domain, domain), eq(schema.demoSessions.ip, ip)))
+      .where(
+        and(
+          eq(schema.demoSessions.domain, domain),
+          eq(schema.demoSessions.ip, ip),
+          gte(schema.demoSessions.createdAt, since(24)),
+        ),
+      )
+      .orderBy(desc(schema.demoSessions.createdAt))
       .limit(1);
 
     if (!row) {

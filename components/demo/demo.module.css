@@ -384,3 +384,257 @@
     transition: none;
   }
 }
+
+/* ============================================================
+   THE PREVIEW
+   Their site, with the agent on it. A chat box on our page
+   asks them to imagine the result; a browser frame carrying
+   their domain, their words and the launcher in the corner
+   shows it — and the thing inside the frame really works.
+   ============================================================ */
+
+.previewWrap {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--paper);
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(10, 10, 10, 0.04), 0 12px 32px -18px rgba(10, 10, 10, 0.28);
+}
+
+.browser {
+  margin: 18px 18px 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  /* The frame sits on a tint so it reads as a window on a desk rather than
+     another panel stacked on the one behind it. */
+  background: #fff;
+  box-shadow: 0 10px 30px -18px rgba(10, 10, 10, 0.45);
+}
+
+.chrome {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  background: var(--line-soft);
+  border-bottom: 1px solid var(--line);
+}
+
+.lights {
+  display: inline-flex;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.lights i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--line);
+}
+
+.urlBar {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.favicon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  border-radius: 2px;
+  object-fit: contain;
+}
+
+/* ---------- the page behind ------------------------------------------- */
+
+.viewport {
+  position: relative;
+  height: 430px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.page {
+  padding: 26px 28px;
+  /* Deliberately understated. This is scenery — the eye should land on the
+     agent in the corner, not read someone's homepage copy. */
+  opacity: 0.5;
+  mask-image: linear-gradient(#000 55%, transparent);
+  -webkit-mask-image: linear-gradient(#000 55%, transparent);
+  user-select: none;
+}
+
+.pageTitle {
+  margin: 0 0 12px;
+  max-width: 22ch;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--ink);
+}
+
+.pageText {
+  margin: 0;
+  max-width: 62ch;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.75;
+  color: var(--muted);
+}
+
+/* ---------- the agent, docked in the corner ---------------------------- */
+
+.launcher {
+  position: absolute;
+  right: 18px;
+  bottom: 16px;
+  width: 74px;
+  height: 68px;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.presence {
+  position: absolute;
+  right: 11px;
+  bottom: 11px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 2.5px #fff;
+}
+
+.widget {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  width: min(340px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(10, 10, 10, 0.08), 0 24px 50px -24px rgba(10, 10, 10, 0.5);
+  animation: widgetIn 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: bottom right;
+}
+
+@keyframes widgetIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.close {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  color: var(--muted);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color var(--dur-btn) var(--ease-btn), border-color var(--dur-btn) var(--ease-btn);
+}
+.close:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.close svg {
+  width: 10px;
+  height: 10px;
+}
+
+/* The shared chat pieces, resized for a widget rather than a full panel. */
+.widget .chatHead {
+  padding: 13px 15px;
+}
+.widget .chatSite {
+  max-width: 24ch;
+  font-size: 14px;
+}
+.widget .stream {
+  height: auto;
+  flex: 1;
+  min-height: 0;
+  padding: 16px 15px;
+  background: none;
+}
+.widget .composer {
+  padding: 12px 15px;
+}
+.widget .bubbleUser,
+.widget .bubbleBot {
+  font-size: 13.5px;
+}
+
+/* ---------- the line under the frame ----------------------------------- */
+
+.previewWrap .cta {
+  border-top: 0;
+  background: none;
+  padding-top: 18px;
+}
+
+/* ---------- responsive -------------------------------------------------- */
+
+@media (max-width: 720px) {
+  .browser {
+    margin: 12px 12px 0;
+  }
+  .viewport {
+    height: 470px;
+  }
+  .page {
+    padding: 20px;
+  }
+  .pageTitle {
+    font-size: 21px;
+  }
+  /* On a phone the widget takes the frame, the way it would on their site. */
+  .widget {
+    right: 10px;
+    left: 10px;
+    bottom: 10px;
+    width: auto;
+    max-height: calc(100% - 20px);
+  }
+  .launcher {
+    right: 12px;
+    bottom: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .widget {
+    animation: none;
+  }
+}

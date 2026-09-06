@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import BotFace from "@/components/chat/BotFace";
 import d from "./demo.module.css";
 
 /**
@@ -28,7 +29,15 @@ export default function WebsiteAgentDemo() {
   const [phase, setPhase] = useState<Phase>("idle");
   const [url, setUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [site, setSite] = useState<{ domain: string; title: string; pages: number } | null>(null);
+  const [site, setSite] = useState<{
+    domain: string;
+    title: string;
+    pages: number;
+    excerpt: string;
+  } | null>(null);
+  // The agent starts closed inside the preview, exactly as it would on their
+  // own site — seeing the launcher first is part of what is being demonstrated.
+  const [chatOpen, setChatOpen] = useState(false);
   const [step, setStep] = useState(0);
 
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -70,7 +79,13 @@ export default function WebsiteAgentDemo() {
         setPhase("error");
         return;
       }
-      setSite({ domain: json.domain, title: json.title, pages: json.pages ?? 0 });
+      setSite({
+        domain: json.domain,
+        title: json.title,
+        pages: json.pages ?? 0,
+        excerpt: json.excerpt ?? "",
+      });
+      setChatOpen(false);
       setMessages([
         {
           role: "assistant",
@@ -126,6 +141,7 @@ export default function WebsiteAgentDemo() {
 
   function reset() {
     setPhase("idle");
+    setChatOpen(false);
     setSite(null);
     setMessages([]);
     setDraft("");
@@ -180,61 +196,135 @@ export default function WebsiteAgentDemo() {
     );
   }
 
-  /* ------------------------------------------------------------- the chat -- */
+  /* ----------------------------------------------------------- the preview -- */
+  /**
+   * Their own site, with the agent sitting on it.
+   *
+   * A chat box on our page asks the visitor to imagine the result. A browser
+   * frame with their domain in the address bar, their own words on the page
+   * and the launcher in the corner shows it — and the thing they are looking
+   * at is genuinely working, not a picture of one.
+   *
+   * The page behind is a representation, not an iframe: almost every real site
+   * sets X-Frame-Options or a frame-ancestors policy, so embedding theirs
+   * would show a blank box on the majority of attempts. What is drawn instead
+   * is all real — their title, their favicon, their text, read minutes ago.
+   */
   return (
-    <div className={d.panel}>
-      <div className={d.chatHead}>
-        <div>
-          <p className={d.chatLabel}>Agent for</p>
-          <p className={d.chatSite}>{site?.title || site?.domain}</p>
+    <div className={d.previewWrap}>
+      <div className={d.browser}>
+        <div className={d.chrome}>
+          <span className={d.lights} aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
+          <span className={d.urlBar}>
+            {/* Their real favicon. If it 404s the element hides itself rather
+                than leaving a broken-image icon in the address bar. */}
+            <img
+              src={`https://${site?.domain}/favicon.ico`}
+              alt=""
+              className={d.favicon}
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = "none";
+              }}
+            />
+            {site?.domain}
+          </span>
+          <button type="button" className={d.reset} onClick={reset}>
+            Try another
+          </button>
         </div>
-        <button type="button" className={d.reset} onClick={reset}>
-          Try another site
-        </button>
-      </div>
 
-      <div className={d.stream} ref={streamRef} aria-live="polite">
-        {messages.map((m, i) => (
-          <div key={i} className={m.role === "user" ? d.rowUser : d.rowBot}>
-            <div className={m.role === "user" ? d.bubbleUser : d.bubbleBot}>{m.content}</div>
+        <div className={d.viewport}>
+          <div className={d.page} aria-hidden="true">
+            <p className={d.pageTitle}>{site?.title || site?.domain}</p>
+            <p className={d.pageText}>{site?.excerpt}</p>
           </div>
-        ))}
-        {sending && (
-          <div className={d.rowBot}>
-            <div className={d.bubbleBot}>
-              <span className={d.dots} aria-label="Thinking">
-                <span />
-                <span />
-                <span />
-              </span>
+
+          {/* The agent, docked exactly where it would sit on their site. */}
+          {!chatOpen && (
+            <button
+              type="button"
+              className={`${d.launcher} jessicaLauncher`}
+              onClick={() => setChatOpen(true)}
+              aria-label="Open the agent"
+            >
+              <BotFace waving />
+              <span className={d.presence} aria-hidden="true" />
+            </button>
+          )}
+
+          {chatOpen && (
+            <div className={d.widget}>
+              <div className={d.chatHead}>
+                <div>
+                  <p className={d.chatLabel}>Agent for</p>
+                  <p className={d.chatSite}>{site?.title || site?.domain}</p>
+                </div>
+                <button
+                  type="button"
+                  className={d.close}
+                  onClick={() => setChatOpen(false)}
+                  aria-label="Close"
+                >
+                  <svg viewBox="0 0 12 12" stroke="currentColor" strokeWidth={1.8} fill="none">
+                    <path d="M1 1l10 10M11 1L1 11" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className={d.stream} ref={streamRef} aria-live="polite">
+                {messages.map((m, i) => (
+                  <div key={i} className={m.role === "user" ? d.rowUser : d.rowBot}>
+                    <div className={m.role === "user" ? d.bubbleUser : d.bubbleBot}>
+                      {m.content}
+                    </div>
+                  </div>
+                ))}
+                {sending && (
+                  <div className={d.rowBot}>
+                    <div className={d.bubbleBot}>
+                      <span className={d.dots} aria-label="Thinking">
+                        <span />
+                        <span />
+                        <span />
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <form onSubmit={send} className={d.composer}>
+                <input
+                  className={d.composerInput}
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  placeholder={
+                    limitHit ? "Demo limit reached" : "Ask it something a customer would…"
+                  }
+                  disabled={sending || Boolean(limitHit)}
+                  aria-label="Your question"
+                />
+                <button
+                  type="submit"
+                  className={d.composerButton}
+                  disabled={sending || Boolean(limitHit) || !draft.trim()}
+                >
+                  Ask
+                </button>
+              </form>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-
-      <form onSubmit={send} className={d.composer}>
-        <input
-          className={d.composerInput}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder={limitHit ? "Demo limit reached" : "Ask it something a customer would…"}
-          disabled={sending || Boolean(limitHit)}
-          aria-label="Your question"
-        />
-        <button
-          type="submit"
-          className={d.composerButton}
-          disabled={sending || Boolean(limitHit) || !draft.trim()}
-        >
-          Ask
-        </button>
-      </form>
 
       <div className={d.cta}>
         <p className={d.ctaText}>
           {limitHit
             ? "That is the demo's limit — the real thing has none."
-            : "This one only read a few pages. The real one knows your whole site, your prices and your calendar."}
+            : `That is ${site?.domain} with an agent on it, answering from the ${site?.pages} pages we just read. The real one knows your whole site, your prices and your calendar.`}
         </p>
         <Link href="/contact" className={d.ctaLink}>
           Put this on your site

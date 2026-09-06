@@ -15,6 +15,23 @@ import { checkCrawlAllowed, clientIp } from "@/lib/demo/limits";
 
 export const maxDuration = 60;
 
+/**
+ * A few readable lines for the preview frame.
+ *
+ * The crawler's own "# domain" and "## /path" markers are stripped: they are
+ * scaffolding for the model, and showing them back to a visitor would make
+ * their own homepage look like a config file.
+ */
+function excerptOf(content: string): string {
+  return content
+    .split("\n")
+    .filter((line) => !line.startsWith("#"))
+    .join(" ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 700);
+}
+
 const body = z.object({ url: z.string().trim().min(3).max(500) });
 const CACHE_HOURS = 24;
 
@@ -54,6 +71,7 @@ export async function POST(req: Request) {
           domain,
           title: cached.title,
           pages: cached.pages,
+          excerpt: excerptOf(cached.content),
           cached: true,
         });
       }
@@ -106,6 +124,7 @@ export async function POST(req: Request) {
     title: result.title,
     pages: result.pages,
     skipped: result.skipped,
+    excerpt: excerptOf(result.content),
     cached: false,
   });
 }
