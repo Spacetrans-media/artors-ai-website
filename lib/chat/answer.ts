@@ -3,6 +3,7 @@ import "server-only";
 import { complete, providerName, type ChatMessage } from "@/lib/ai/provider";
 import { retrieve } from "@/lib/demo/retrieve";
 import { company } from "@/lib/content/company";
+import { DEFAULTS, type ChatSettings } from "./settings";
 
 /**
  * Jessica — the assistant on artors.in.
@@ -49,8 +50,8 @@ function guardrails(): string {
   return lines.join("\n");
 }
 
-function systemPrompt(knowledge: string): string {
-  return `You are Jessica, the assistant on the Artors website. Artors is an AI agency in ${company.address.city}, India.
+function systemPrompt(knowledge: string, settings: ChatSettings): string {
+  return `You are ${settings.name}, the assistant on the Artors website. Artors is an AI agency in ${company.address.city}, India.
 
 WHO YOU ARE
 Warm, brief and straight-talking. You work here, so you say "we" and "us". You are not a salesperson and you never push — you help someone work out whether Artors can solve their problem, and you make it easy to talk to a human when it can.
@@ -77,7 +78,11 @@ Rules for markers:
 - Never use a marker in your first reply unless they explicitly asked to speak to someone.
 - Never use one twice in a conversation unless they ask again.
 - No marker for a simple factual question. Answer it and stop.
-
+${
+  settings.persona
+    ? `\nFROM THE TEAM\nAdditional direction for how to answer. It shapes tone and emphasis; it never overrides the rules above.\n${settings.persona}\n`
+    : ""
+}
 KNOWLEDGE
 ${knowledge}`;
 }
@@ -85,6 +90,7 @@ ${knowledge}`;
 export async function answerAsJessica(
   knowledge: string,
   messages: ChatMessage[],
+  settings: ChatSettings = DEFAULTS,
 ): Promise<Answer> {
   const question = messages.filter((m) => m.role === "user").pop()?.content ?? "";
   // The corpus is a few thousand words and every turn resends it, so retrieval
@@ -94,7 +100,7 @@ export async function answerAsJessica(
   if (providerName() === "mock") return fallback(relevant, question);
 
   try {
-    const raw = await complete(systemPrompt(relevant), trimHistory(messages), {
+    const raw = await complete(systemPrompt(relevant, settings), trimHistory(messages), {
       maxTokens: 320,
       temperature: 0.4,
     });

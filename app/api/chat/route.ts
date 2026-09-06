@@ -3,6 +3,7 @@ import { z } from "zod";
 import { buildKnowledge } from "@/lib/chat/knowledge";
 import { answerAsJessica } from "@/lib/chat/answer";
 import { checkAllowed, saveTurn, clientIp, MAX_TURNS_PER_SESSION } from "@/lib/chat/store";
+import { getChatSettings } from "@/lib/chat/settings";
 import type { ChatMessage } from "@/lib/ai/provider";
 
 /** One turn of a conversation with Jessica. */
@@ -30,7 +31,12 @@ export async function POST(req: Request) {
   const { sessionKey, sourcePath, messages } = parsed.data;
   const ip = clientIp(req.headers);
 
-  const allowed = await checkAllowed(sessionKey, ip);
+  const settings = await getChatSettings();
+  if (!settings.enabled) {
+    return NextResponse.json({ error: "The assistant is offline." }, { status: 503 });
+  }
+
+  const allowed = await checkAllowed(sessionKey, ip, settings.maxTurns);
   if (!allowed.ok) {
     // 200, not 429: this is a thing Jessica says, not an error the widget
     // should render as a failure. The client shows the capture form instead.
@@ -38,7 +44,11 @@ export async function POST(req: Request) {
   }
 
   const knowledge = await buildKnowledge();
-  const { reply, action } = await answerAsJessica(knowledge, messages as ChatMessage[]);
+  const { reply, action } = await answerAsJessica(
+    knowledge,
+    messages as ChatMessage[],
+    settings,
+  );
 
   await saveTurn({
     sessionKey,

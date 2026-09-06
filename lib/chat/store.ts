@@ -46,13 +46,17 @@ export async function loadSession(sessionKey: string) {
  * a chat that stops working because a count query failed is a worse outcome
  * than a chat that briefly has no ceiling.
  */
-export async function checkAllowed(sessionKey: string, ip: string): Promise<Verdict> {
+export async function checkAllowed(
+  sessionKey: string,
+  ip: string,
+  maxTurns: number = MAX_TURNS_PER_SESSION,
+): Promise<Verdict> {
   const db = getDb();
   if (!db) return { ok: true };
 
   try {
     const existing = await loadSession(sessionKey);
-    if (existing && existing.turns >= MAX_TURNS_PER_SESSION) {
+    if (existing && existing.turns >= maxTurns) {
       return {
         ok: false,
         error: `We have covered a fair bit here. Leave your number and someone from the team will pick it up properly.`,

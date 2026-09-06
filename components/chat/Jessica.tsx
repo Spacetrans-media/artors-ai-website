@@ -26,52 +26,81 @@ import s from "./jessica.module.css";
 type Msg = { role: "user" | "assistant"; content: string };
 type Intent = "callback" | "meeting";
 
-const GREETING =
-  "Hi, I am Jessica. I can tell you what we build, how projects run, and what it would take for your business. What are you trying to fix?";
+/**
+ * What the widget renders before /api/chat/config answers, and what it falls
+ * back to if that request fails. She is never blank and never broken.
+ */
+type Config = {
+  enabled: boolean;
+  name: string;
+  tagline: string;
+  openingMessage: string;
+  greetingTitle: string;
+  greetingText: string;
+  greetingMode: "first_visit" | "every_session" | "off";
+  greetingDelay: number;
+  suggestions: string[];
+  maxTurns: number;
+};
 
-const CHIPS = [
-  "What does Artors do?",
-  "What would it cost?",
-  "Can you automate WhatsApp enquiries?",
-  "I want to speak to someone",
-];
+const FALLBACK: Config = {
+  enabled: true,
+  name: "Jessica",
+  tagline: "Artors — usually replies instantly",
+  openingMessage:
+    "Hi, I am Jessica. I can tell you what we build, how projects run, and what it would take for your business. What are you trying to fix?",
+  greetingTitle: "Ask Jessica",
+  greetingText: "I am online — how can I help you today?",
+  greetingMode: "first_visit",
+  greetingDelay: 4,
+  suggestions: [
+    "What does Artors do?",
+    "What would it cost?",
+    "Can you automate WhatsApp enquiries?",
+    "I want to speak to someone",
+  ],
+  maxTurns: 12,
+};
 
 const STORAGE_KEY = "artors.jessica.v1";
 
 /**
- * Whether this person has ever been greeted — localStorage, not session.
+ * Whether this person has been greeted already.
  *
- * The distinction is the whole behaviour. A first-time visitor does not know
- * there is an assistant here, so she introduces herself. Someone who has been
- * before already knows, and greeting them again on every visit is how a
+ * Which store it lives in is the setting: localStorage means once in a
+ * visitor's life, sessionStorage means once per tab. A first-time visitor does
+ * not know there is an assistant here, so she introduces herself; someone who
+ * has been before already knows, and greeting them on every visit is how a
  * helpful widget turns into an irritating one.
  */
 const SEEN_KEY = "artors.jessica.seen";
 
 /**
- * How long before she says hello.
- *
- * Long enough that the visitor has taken in the headline and formed a first
- * impression, short enough that they have not left. Three seconds is the
- * common choice and is too fast — it interrupts the sentence they are reading.
+ * Which store holds the "already greeted" flag depends on the mode chosen in
+ * the admin: localStorage outlives the tab, sessionStorage does not.
  */
-const GREETING_DELAY_MS = 4000;
-
-/** Reads a flag without throwing where storage is blocked or full. */
-function hasSeen(): boolean {
+function store(mode: Config["greetingMode"]): Storage | null {
   try {
-    return localStorage.getItem(SEEN_KEY) === "1";
+    return mode === "every_session" ? sessionStorage : localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function hasGreeted(mode: Config["greetingMode"]): boolean {
+  try {
+    return store(mode)?.getItem(SEEN_KEY) === "1";
   } catch {
     // Private windows and locked-down browsers throw on access. Treating that
-    // as "never seen" is the right failure: a new visitor still gets greeted,
-    // and the cost of being wrong is one bubble.
+    // as "not yet greeted" is the right failure: a new visitor still gets the
+    // introduction, and the cost of being wrong is one bubble.
     return false;
   }
 }
 
-function markSeen(): void {
+function markGreeted(mode: Config["greetingMode"]): void {
   try {
-    localStorage.setItem(SEEN_KEY, "1");
+    store(mode)?.setItem(SEEN_KEY, "1");
   } catch {
     /* nothing to do; she simply greets again next time */
   }
@@ -89,7 +118,7 @@ function newSessionKey(): string {
 
 export default function Jessica() {
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Msg[]>([{ role: "assistant", content: GREETING }]);
+  const [messages, setMessages] = useState<Msg[]>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [action, setAction] = useState<Intent | null>(null);
@@ -97,10 +126,43 @@ export default function Jessica() {
   const [sessionKey, setSessionKey] = useState("");
   const [greeting, setGreeting] = useState(false);
   const [waving, setWaving] = useState(false);
+  const [cfg, setCfg] = useState<Config | null>(null);
 
   const streamRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const pathname = usePathname();
+
+  /**
+   * Load how she should present herself.
+   *
+   * Nothing renders until this resolves — a launcher that appears and then
+   * vanishes because the admin switched her off is worse than one that appears
+   * a moment later. The response is edge-cached, so it is usually instant. If
+   * it fails outright she falls back to the built-in copy rather than
+   * disappearing, because a working assistant with stale wording beats none.
+   */
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/chat/config")
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+      .then((c: Partial<Config>) => {
+        if (!cancelled) setCfg({ ...FALLBACK, ...c });
+      })
+      .catch(() => {
+        if (!cancelled) setCfg(FALLBACK);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Her opening line, once config has landed and only for a fresh conversation.
+  useEffect(() => {
+    if (!cfg) return;
+    setMessages((prev) =>
+      prev.length ? prev : [{ role: "assistant", content: cfg.openingMessage }],
+    );
+  }, [cfg]);
 
   // Restore the conversation, or start one. Wrapped because a browser with
   // storage blocked throws on access rather than returning null.
@@ -137,23 +199,28 @@ export default function Jessica() {
   }, [messages, sending, action, open]);
 
   /**
-   * A first-time visitor gets introduced to her. Once, ever.
+   * She introduces herself, on whichever schedule the admin chose.
    *
-   * The flag is written the moment the bubble shows rather than when it is
-   * dismissed, so moving to a second page mid-greeting still counts. A bubble
-   * that reappears on every page is exactly why people close these unread.
+   * "first_visit" writes to localStorage, so it happens once in a visitor's
+   * life. "every_session" writes to sessionStorage, so it happens once per tab
+   * for a site people come back to. Either way the flag is written the moment
+   * the bubble appears rather than when it is dismissed — moving to a second
+   * page mid-greeting still counts, because a bubble that reappears on every
+   * page is exactly why people close these unread.
    */
   useEffect(() => {
-    if (open || hasSeen()) return;
+    if (!cfg || open || cfg.greetingMode === "off") return;
+    if (hasGreeted(cfg.greetingMode)) return;
+
     const id = setTimeout(() => {
       setGreeting(true);
       setWaving(true);
-      markSeen();
+      markGreeted(cfg.greetingMode);
       // Stop waving after the gesture finishes so she settles into the idle.
       setTimeout(() => setWaving(false), 2000);
-    }, GREETING_DELAY_MS);
+    }, cfg.greetingDelay * 1000);
     return () => clearTimeout(id);
-  }, [open]);
+  }, [open, cfg]);
 
   // Escape closes, matching the lead modal.
   useEffect(() => {
@@ -215,6 +282,10 @@ export default function Jessica() {
     [messages, pathname, sending, sessionKey, captured],
   );
 
+  // Config decides whether she exists at all, so wait for it rather than
+  // flashing a launcher the admin has switched off.
+  if (!cfg || !cfg.enabled) return null;
+
   return (
     <>
       <div className={s.dock} data-open={open || undefined}>
@@ -231,11 +302,9 @@ export default function Jessica() {
             >
               <span className={s.greetingTitle}>
                 <span className={s.online} aria-hidden="true" />
-                Ask Jessica
+                {cfg.greetingTitle}
               </span>
-              <span className={s.greetingText}>
-                I am online — how can I help you today?
-              </span>
+              <span className={s.greetingText}>{cfg.greetingText}</span>
             </button>
             <button
               type="button"
@@ -258,7 +327,7 @@ export default function Jessica() {
             setOpen(true);
             setTimeout(() => inputRef.current?.focus(), 80);
           }}
-          aria-label="Chat with Jessica"
+          aria-label={`Chat with ${cfg.name}`}
           aria-expanded={open}
         >
           <BotFace waving={waving} />
@@ -267,14 +336,14 @@ export default function Jessica() {
       </div>
 
       {open && (
-        <div className={s.panel} role="dialog" aria-label="Chat with Jessica">
+        <div className={s.panel} role="dialog" aria-label={`Chat with ${cfg.name}`}>
           <div className={s.head}>
             <span className={s.headAvatar}>
               <BotFace />
             </span>
             <div className={s.headText}>
-              <p className={s.headName}>Jessica</p>
-              <p className={s.headSub}>Artors — usually replies instantly</p>
+              <p className={s.headName}>{cfg.name}</p>
+              <p className={s.headSub}>{cfg.tagline}</p>
             </div>
             <button
               type="button"
@@ -309,7 +378,7 @@ export default function Jessica() {
 
             {messages.length === 1 && !sending && (
               <div className={s.chips}>
-                {CHIPS.map((c) => (
+                {cfg.suggestions.map((c) => (
                   <button key={c} type="button" className={s.chip} onClick={() => ask(c)}>
                     {c}
                   </button>
@@ -350,7 +419,7 @@ export default function Jessica() {
               className={s.input}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              placeholder="Ask me anything about Artors…"
+              placeholder={`Ask ${cfg.name} anything…`}
               disabled={sending}
               aria-label="Your message"
             />

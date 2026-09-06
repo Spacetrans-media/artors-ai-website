@@ -108,6 +108,39 @@ She falls back to a keyword match over the knowledge base and offers a human.
 A worse assistant, but an honest one, and **lead capture keeps working** — which
 is the part that actually matters commercially.
 
+## Customising her — /admin/jessica
+
+One row in `chat_settings`, edited as a form. Every field has a code default
+and the row only ever overrides one, so she works before the table is touched
+and keeps working if a field is cleared — a blank box means "use the default",
+never "show nothing".
+
+| Setting | Notes |
+|---|---|
+| Enabled | Off removes her from every page: no launcher, no model cost |
+| Name, tagline | Used in the header, the launcher label and her own prompt |
+| Opening message | Her first line in the chat |
+| Greeting title and text | The bubble beside her |
+| Greeting mode | Once per visitor (localStorage), once per session, or never |
+| Greeting delay | Seconds. Clamped 1–60 on read |
+| Starter questions | Up to four; four separate inputs, since a suggestion may contain a comma |
+| Extra direction | Appended to her instructions, for tone |
+| Message limit | Turns before she asks for a human. Clamped 2–30 |
+
+**What is deliberately NOT editable:** the guardrails. No prices, no invented
+clients, no contact details that do not exist. Those are the rules that stop
+her making things up, and a text box in an admin panel is exactly how such a
+rule gets softened by accident at 11pm.
+
+**Facts belong in the knowledge base, not in "extra direction".** Knowledge is
+retrieved only when a question needs it; anything in the persona box is resent
+on every single message and is charged for every time.
+
+The widget reads `/api/chat/config` — a separate request rather than props
+from the layout, because reading the database in `app/(site)/layout.tsx` would
+make all 63 static pages dynamic. Edge-cached for 60 seconds, so an edit is
+live within a minute. `persona` is stripped from that response.
+
 ## Reading the conversations
 
 `/admin/conversations`, read-only. Two jobs:

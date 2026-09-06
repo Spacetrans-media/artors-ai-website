@@ -354,3 +354,60 @@ export const chatSessions = mysqlTable(
     index("chat_sessions_created_idx").on(t.createdAt),
   ],
 );
+
+/**
+ * How Jessica presents herself — one row, edited at /admin/jessica.
+ *
+ * A single row rather than a key/value bag, so every setting is a typed column
+ * with a default and the read path needs no parsing or casting. There is no UI
+ * to create a second row; `lib/chat/settings.ts` reads the first and falls back
+ * to code defaults, which means the widget works before this table is ever
+ * touched and keeps working if it is emptied.
+ *
+ * What is NOT here: the guardrails. Prices, case studies and contact details
+ * stay in code because they are the rules that stop her inventing things, and
+ * a text box in an admin panel is exactly how such a rule gets softened by
+ * accident at 11pm.
+ */
+export const chatSettings = mysqlTable("chat_settings", {
+  id: id(),
+
+  /** Off removes her from the site entirely — no launcher, no API cost. */
+  enabled: boolean("enabled").default(true).notNull(),
+  name: varchar("name", { length: 60 }).default("Jessica").notNull(),
+  /** Under her name in the chat header. */
+  tagline: varchar("tagline", { length: 140 }),
+
+  /** Her first message inside the chat. */
+  openingMessage: text("opening_message"),
+
+  /** The bubble that introduces her. */
+  greetingTitle: varchar("greeting_title", { length: 80 }),
+  greetingText: varchar("greeting_text", { length: 200 }),
+  /**
+   * first_visit  once in a visitor's life — the default, and the kind one
+   * every_session once per tab, for a site people return to often
+   * off           she waits to be clicked
+   */
+  greetingMode: mysqlEnum("greeting_mode", ["first_visit", "every_session", "off"])
+    .default("first_visit")
+    .notNull(),
+  /** Seconds before the bubble appears. */
+  greetingDelay: int("greeting_delay").default(4).notNull(),
+
+  /** The starter questions. Up to four; more than that is a menu, not a hint. */
+  suggestions: json("suggestions").$type<string[]>(),
+
+  /**
+   * Appended to her instructions. For tone and emphasis — "mention that we
+   * work weekends", "lead with automation rather than chatbots". Not the place
+   * for facts: those belong in the knowledge base, where they are retrieved
+   * only when relevant instead of costing tokens on every single turn.
+   */
+  persona: text("persona"),
+
+  /** Turns before she asks for a human. Guards the model bill. */
+  maxTurns: int("max_turns").default(12).notNull(),
+
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});
