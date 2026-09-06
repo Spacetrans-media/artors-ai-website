@@ -411,3 +411,30 @@ export const chatSettings = mysqlTable("chat_settings", {
 
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });
+
+/**
+ * Every model call, and what it cost — the row behind /admin usage.
+ *
+ * One row per successful completion. Failures are not recorded because a 429
+ * or a timeout consumes no tokens, and counting them would make the number
+ * mean something other than spend.
+ *
+ * Input and output are stored separately rather than summed: they are priced
+ * differently by every provider, and input is the figure that matters here
+ * anyway — the context is resent on every message, so it is what decides how
+ * many questions fit inside a per-minute ceiling.
+ */
+export const aiUsage = mysqlTable(
+  "ai_usage",
+  {
+    id: id(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    /** Which feature spent it. Jessica and the public demo bill differently. */
+    surface: mysqlEnum("surface", ["chat", "demo", "other"]).default("other").notNull(),
+    provider: varchar("provider", { length: 24 }).notNull(),
+    model: varchar("model", { length: 120 }),
+    inputTokens: int("input_tokens").default(0).notNull(),
+    outputTokens: int("output_tokens").default(0).notNull(),
+  },
+  (t) => [index("ai_usage_created_idx").on(t.createdAt), index("ai_usage_surface_idx").on(t.surface, t.createdAt)],
+);

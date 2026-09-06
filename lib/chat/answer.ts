@@ -103,6 +103,7 @@ export async function answerAsJessica(
     const raw = await complete(systemPrompt(relevant, settings), trimHistory(messages), {
       maxTokens: 320,
       temperature: 0.4,
+      surface: "chat",
     });
     if (!raw) return fallback(relevant, question);
     return parse(raw);

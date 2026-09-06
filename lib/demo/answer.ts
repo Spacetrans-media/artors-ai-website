@@ -44,7 +44,7 @@ export async function answer(
   if (providerName() === "mock") return viaMock(context, messages);
 
   try {
-    const reply = await complete(system, messages, { maxTokens: 400 });
+    const reply = await complete(system, messages, { maxTokens: 400, surface: "demo" });
     return reply || "No answer came back.";
   } catch (e) {
     console.error("[demo:provider-failed]", providerName(), e);

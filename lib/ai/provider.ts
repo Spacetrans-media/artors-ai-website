@@ -18,6 +18,8 @@ import "server-only";
  * adapter. One provider, most of the market.
  */
 
+import { getDb, schema } from "@/lib/db";
+
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 
 export type Provider = "anthropic" | "gemini" | "openai" | "mock";
@@ -40,10 +42,14 @@ export function hasModel(): boolean {
   return providerName() !== "mock";
 }
 
+export type Surface = "chat" | "demo" | "other";
+
 export type CompleteOptions = {
   /** Output ceiling. Counts against a free tier's per-minute budget too. */
   maxTokens?: number;
   temperature?: number;
+  /** Which feature is spending. Recorded so the admin can see the split. */
+  surface?: Surface;
 };
 
 /**
@@ -59,10 +65,13 @@ export async function complete(
   const provider = providerName();
   const maxTokens = opts.maxTokens ?? 400;
   const temperature = opts.temperature ?? 0.3;
+  const surface = opts.surface ?? "other";
 
-  if (provider === "anthropic") return viaAnthropic(system, messages, maxTokens);
-  if (provider === "gemini") return viaGemini(system, messages, maxTokens, temperature);
-  if (provider === "openai") return viaOpenAiCompatible(system, messages, maxTokens, temperature);
+  if (provider === "anthropic") return viaAnthropic(system, messages, maxTokens, surface);
+  if (provider === "gemini") return viaGemini(system, messages, maxTokens, temperature, surface);
+  if (provider === "openai") {
+    return viaOpenAiCompatible(system, messages, maxTokens, temperature, surface);
+  }
   throw new Error("No model provider configured.");
 }
 
@@ -74,7 +83,7 @@ export async function complete(
  * decides how many questions a visitor gets before a per-minute ceiling says
  * no. Guessing at it once already cost a working demo.
  */
-function logUsage(provider: Provider, json: unknown): void {
+async function logUsage(provider: Provider, surface: Surface, json: unknown): Promise<void> {
   const u = json as {
     usage?: {
       input_tokens?: number;
@@ -89,14 +98,37 @@ function logUsage(provider: Provider, json: unknown): void {
   const output =
     u.usage?.output_tokens ?? u.usage?.completion_tokens ?? u.usageMetadata?.candidatesTokenCount;
   if (input == null && output == null) return;
+
   const model = process.env.DEMO_MODEL ?? "default";
-  console.log(`[ai:usage] ${provider} ${model} in=${input ?? "?"} out=${output ?? "?"}`);
+  console.log(
+    `[ai:usage] ${provider} ${model} ${surface} in=${input ?? "?"} out=${output ?? "?"}`,
+  );
+
+  // One small insert on the response path. Awaited rather than fired and
+  // forgotten, because a floating promise can be cut short when the request
+  // ends, and usage that only sometimes records is worse than none — it would
+  // read as an under-count and nobody would know by how much.
+  const db = getDb();
+  if (!db) return;
+  try {
+    await db.insert(schema.aiUsage).values({
+      surface,
+      provider,
+      model: model.slice(0, 120),
+      inputTokens: input ?? 0,
+      outputTokens: output ?? 0,
+    });
+  } catch (e) {
+    // Accounting must never cost an answer the visitor is waiting for.
+    console.error("[ai:usage-write-failed]", e);
+  }
 }
 
 async function viaAnthropic(
   system: string,
   messages: ChatMessage[],
   maxTokens: number,
+  surface: Surface,
 ): Promise<string> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -116,7 +148,7 @@ async function viaAnthropic(
   });
   if (!res.ok) throw new Error(`anthropic ${res.status}: ${await res.text()}`);
   const json = await res.json();
-  logUsage("anthropic", json);
+  await logUsage("anthropic", surface, json);
   return json.content?.[0]?.text?.trim() || "";
 }
 
@@ -125,6 +157,7 @@ async function viaGemini(
   messages: ChatMessage[],
   maxTokens: number,
   temperature: number,
+  surface: Surface,
 ): Promise<string> {
   const model = process.env.DEMO_MODEL || "gemini-flash-latest";
   const res = await fetch(
@@ -144,7 +177,7 @@ async function viaGemini(
   );
   if (!res.ok) throw new Error(`gemini ${res.status}: ${await res.text()}`);
   const json = await res.json();
-  logUsage("gemini", json);
+  await logUsage("gemini", surface, json);
   return json.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
 }
 
@@ -160,6 +193,7 @@ async function viaOpenAiCompatible(
   messages: ChatMessage[],
   maxTokens: number,
   temperature: number,
+  surface: Surface,
 ): Promise<string> {
   const base = (process.env.DEMO_BASE_URL || "https://api.openai.com/v1").replace(/[/]+$/, "");
   const key = process.env.OPENAI_API_KEY;
@@ -178,6 +212,6 @@ async function viaOpenAiCompatible(
   });
   if (!res.ok) throw new Error(`openai-compatible ${res.status}: ${await res.text()}`);
   const json = await res.json();
-  logUsage("openai", json);
+  await logUsage("openai", surface, json);
   return json.choices?.[0]?.message?.content?.trim() || "";
 }

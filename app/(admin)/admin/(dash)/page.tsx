@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import { getOverview } from "@/lib/admin/queries";
+import { getUsage } from "@/lib/admin/usage";
+import UsagePanel from "@/components/admin/UsagePanel";
 import { getHealth } from "@/lib/admin/health";
 import { COLLECTION_LIST } from "@/lib/admin/collections";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/admin/ui/card";
@@ -25,7 +27,11 @@ function Stat({ label, value, hint }: { label: string; value: number; hint?: str
 }
 
 export default async function OverviewPage() {
-  const [data, health] = await Promise.all([getOverview().catch(() => null), getHealth()]);
+  const [data, health, usage] = await Promise.all([
+    getOverview().catch(() => null),
+    getHealth(),
+    getUsage().catch(() => null),
+  ]);
   const broken = health.filter((c) => !c.ok);
 
   const healthPanel = broken.length > 0 && (
@@ -108,6 +114,8 @@ export default async function OverviewPage() {
           hint={data.leads.unnotified ? "Needs attention" : "All delivered"}
         />
       </section>
+
+      {usage && <UsagePanel usage={usage} />}
 
       <section>
         <h2 className="mb-3 text-sm font-semibold">Site content</h2>

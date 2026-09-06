@@ -152,8 +152,29 @@ live within a minute. `persona` is stripped from that response.
 Adding an entry there is live immediately — she reads the table per request
 rather than from a rendered page, so there is nothing to revalidate.
 
-## Cost
+## Cost, and where to see it
 
-Retrieval keeps a turn at roughly 1,300–1,800 tokens. On Groq's free tier that
-is comfortably inside the per-minute budget for a normal conversation. See
-`.env.example` for provider setup.
+Every successful model call writes a row to `ai_usage` — provider, model,
+which feature spent it, input and output tokens. Failures are not recorded,
+because a 429 consumes no tokens and counting one would make the number mean
+something other than spend.
+
+The panel on **/admin** shows today, the last seven days, the split between
+Jessica and the demo, and how much of each daily ceiling is left.
+
+**Costing is opt-in.** Set the two rates from your provider's pricing page:
+
+```bash
+AI_PRICE_INPUT_PER_M=0.15    # USD per MILLION input tokens
+AI_PRICE_OUTPUT_PER_M=0.60   # USD per MILLION output tokens
+```
+
+Leave them blank and the dashboard shows token counts and says it cannot cost
+them. A wrong rate displayed confidently is worse than no rate.
+
+Measured: retrieval keeps a turn around **1,600–1,800 input tokens** and under
+a hundred out. Input is the figure that matters — it is resent on every
+message, so it decides how many questions fit inside a per-minute ceiling.
+
+The "worst case a day" tile is the arithmetic of the ceilings above, not a
+forecast: every chat turn and every demo message saturated by abuse.
