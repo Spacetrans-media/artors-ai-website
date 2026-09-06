@@ -66,6 +66,33 @@ export async function complete(
   throw new Error("No model provider configured.");
 }
 
+/**
+ * What a call actually cost, normalised across the three providers.
+ *
+ * Logged permanently rather than estimated. The number that matters is INPUT
+ * tokens per turn: the context is resent on every message, so it is what
+ * decides how many questions a visitor gets before a per-minute ceiling says
+ * no. Guessing at it once already cost a working demo.
+ */
+function logUsage(provider: Provider, json: unknown): void {
+  const u = json as {
+    usage?: {
+      input_tokens?: number;
+      output_tokens?: number;
+      prompt_tokens?: number;
+      completion_tokens?: number;
+    };
+    usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number };
+  };
+  const input =
+    u.usage?.input_tokens ?? u.usage?.prompt_tokens ?? u.usageMetadata?.promptTokenCount;
+  const output =
+    u.usage?.output_tokens ?? u.usage?.completion_tokens ?? u.usageMetadata?.candidatesTokenCount;
+  if (input == null && output == null) return;
+  const model = process.env.DEMO_MODEL ?? "default";
+  console.log(`[ai:usage] ${provider} ${model} in=${input ?? "?"} out=${output ?? "?"}`);
+}
+
 async function viaAnthropic(
   system: string,
   messages: ChatMessage[],
@@ -89,6 +116,7 @@ async function viaAnthropic(
   });
   if (!res.ok) throw new Error(`anthropic ${res.status}: ${await res.text()}`);
   const json = await res.json();
+  logUsage("anthropic", json);
   return json.content?.[0]?.text?.trim() || "";
 }
 
@@ -116,6 +144,7 @@ async function viaGemini(
   );
   if (!res.ok) throw new Error(`gemini ${res.status}: ${await res.text()}`);
   const json = await res.json();
+  logUsage("gemini", json);
   return json.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "";
 }
 
@@ -149,5 +178,6 @@ async function viaOpenAiCompatible(
   });
   if (!res.ok) throw new Error(`openai-compatible ${res.status}: ${await res.text()}`);
   const json = await res.json();
+  logUsage("openai", json);
   return json.choices?.[0]?.message?.content?.trim() || "";
 }
