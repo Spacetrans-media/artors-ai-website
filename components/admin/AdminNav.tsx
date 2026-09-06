@@ -11,6 +11,8 @@ import {
   Users,
   Newspaper,
   BookA,
+  Bot,
+  MessagesSquare,
   LogOut,
   ExternalLink,
 } from "lucide-react";
@@ -21,6 +23,8 @@ import { Button } from "@/components/admin/ui/button";
 const NAV = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/admin/leads", label: "Leads", icon: Inbox },
+  { href: "/admin/conversations", label: "Conversations", icon: MessagesSquare },
+  { href: "/admin/kb", label: "Jessica's knowledge", icon: Bot },
   { href: "/admin/clients", label: "Logos", icon: Building2 },
   { href: "/admin/case-studies", label: "Case studies", icon: FileText },
   { href: "/admin/testimonials", label: "Testimonials", icon: Quote },

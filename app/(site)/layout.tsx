@@ -7,6 +7,7 @@ import GradualBlur from "@/components/fx/GradualBlur";
 import PageFx from "@/components/fx/PageFx";
 import Footer from "@/components/site/Footer";
 import LeadModal from "@/components/lead/LeadModal";
+import Jessica from "@/components/chat/Jessica";
 
 // Variable font — one file, full weight range. The design system only
 // ever uses 600 and 700 (docs/DESIGN.md §2).
@@ -40,6 +41,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {children}
         <Footer />
         <LeadModal />
+        <Jessica />
         <GradualBlur />
         <PageFx />
       </body>

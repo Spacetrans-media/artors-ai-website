@@ -1,0 +1,403 @@
+/* ============================================================
+   JESSICA — the site assistant.
+   Same grammar as the demo panel: one bordered surface,
+   hairlines inside, flat fills, no glow. The launcher is the
+   only fixed-position element on the site, so it stays small
+   and gets out of the way on mobile.
+   ============================================================ */
+
+.launcher {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 90;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 18px 12px 14px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--paper);
+  background: var(--ink);
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(10, 10, 10, 0.14), 0 14px 34px -14px rgba(10, 10, 10, 0.5);
+  transition: background var(--dur-btn) var(--ease-btn), transform var(--dur-btn) var(--ease-btn);
+}
+.launcher:hover {
+  background: var(--accent);
+  transform: translateY(-1px);
+}
+.launcher[data-open="true"] {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Her initial, not a robot icon. She is presented as a person answering. */
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--paper);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* A quiet pulse, three times, so the launcher is noticed without nagging. */
+.ping {
+  position: absolute;
+  top: 9px;
+  right: 15px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: ping 2.4s ease-out 3;
+}
+@keyframes ping {
+  0% { transform: scale(1); opacity: 0.9; }
+  70% { transform: scale(2.4); opacity: 0; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+/* ---------- panel ------------------------------------------------------ */
+
+.panel {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 95;
+  display: flex;
+  flex-direction: column;
+  width: min(392px, calc(100vw - 32px));
+  height: min(600px, calc(100dvh - 40px));
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(10, 10, 10, 0.06), 0 28px 64px -28px rgba(10, 10, 10, 0.42);
+  animation: rise 0.24s ease-out;
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 15px 16px;
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.headAvatar {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--paper);
+  background: var(--ink);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.headText {
+  min-width: 0;
+  flex: 1;
+}
+
+.headName {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.headSub {
+  margin: 1px 0 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.close {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  color: var(--muted);
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  cursor: pointer;
+  transition: color var(--dur-btn) var(--ease-btn), border-color var(--dur-btn) var(--ease-btn);
+}
+.close:hover {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.close svg {
+  width: 11px;
+  height: 11px;
+}
+
+/* ---------- stream ----------------------------------------------------- */
+
+.stream {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rowUser { display: flex; justify-content: flex-end; }
+.rowBot { display: flex; justify-content: flex-start; }
+
+.bubbleUser,
+.bubbleBot {
+  max-width: 86%;
+  padding: 11px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.55;
+  border-radius: 15px;
+  white-space: pre-wrap;
+  text-wrap: pretty;
+}
+
+.bubbleUser {
+  background: var(--ink);
+  color: #fff;
+  border-bottom-right-radius: 5px;
+}
+
+.bubbleBot {
+  background: var(--line-soft);
+  color: var(--ink);
+  border-bottom-left-radius: 5px;
+}
+
+.dots {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+  height: 10px;
+}
+.dots span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--muted);
+  animation: blink 1.1s ease-in-out infinite;
+}
+.dots span:nth-child(2) { animation-delay: 0.18s; }
+.dots span:nth-child(3) { animation-delay: 0.36s; }
+@keyframes blink {
+  0%, 80%, 100% { opacity: 0.25; }
+  40% { opacity: 1; }
+}
+
+/* ---------- opening suggestions ---------------------------------------- */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 2px;
+}
+
+.chip {
+  padding: 8px 12px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color var(--dur-btn) var(--ease-btn), color var(--dur-btn) var(--ease-btn);
+}
+.chip:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ---------- the capture form ------------------------------------------- */
+
+.capture {
+  margin-top: 2px;
+  padding: 14px;
+  background: var(--line-soft);
+  border: 1px solid var(--line);
+  border-radius: 15px;
+}
+
+.captureTitle {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.field {
+  width: 100%;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  font-family: inherit;
+  font-size: 16px; /* 16px stops iOS zooming on focus */
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  transition: border-color var(--dur-btn) var(--ease-btn);
+}
+.field:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Off-screen rather than display:none — a bot filling hidden inputs still
+   trips it, and a screen reader is told to skip it. */
+.honey {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.submit {
+  width: 100%;
+  padding: 11px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--paper);
+  background: var(--ink);
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background var(--dur-btn) var(--ease-btn);
+}
+.submit:hover:not(:disabled) { background: var(--accent); }
+.submit:disabled { opacity: 0.5; cursor: default; }
+
+.captureNote {
+  margin: 9px 0 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.done {
+  margin-top: 2px;
+  padding: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.55;
+  color: var(--ink);
+  background: var(--line-soft);
+  border: 1px solid var(--line);
+  border-radius: 15px;
+}
+
+/* ---------- composer --------------------------------------------------- */
+
+.composer {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 13px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  transition: border-color var(--dur-btn) var(--ease-btn);
+}
+.input:focus { outline: none; border-color: var(--accent); }
+.input:disabled { opacity: 0.6; }
+
+.send {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  flex-shrink: 0;
+  color: var(--paper);
+  background: var(--ink);
+  border: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background var(--dur-btn) var(--ease-btn);
+}
+.send:hover:not(:disabled) { background: var(--accent); }
+.send:disabled { opacity: 0.4; cursor: default; }
+.send svg { width: 15px; height: 15px; }
+
+.footer {
+  padding: 0 16px 11px;
+  margin: 0;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* ---------- mobile: a sheet, not a floating card ----------------------- */
+
+@media (max-width: 520px) {
+  .launcher {
+    right: 14px;
+    bottom: 14px;
+    padding: 11px 16px 11px 12px;
+  }
+  .panel {
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 88dvh;
+    border-radius: 20px 20px 0 0;
+    border-bottom: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .launcher,
+  .panel,
+  .ping,
+  .dots span {
+    animation: none;
+    transition: none;
+  }
+}

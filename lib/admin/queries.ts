@@ -87,3 +87,23 @@ export async function listCollection(key: CollectionKey): Promise<Record<string,
     .orderBy(table.sortOrder, sql`id desc`)
     .limit(500) as Promise<Record<string, unknown>[]>;
 }
+
+export type ChatRow = typeof schema.chatSessions.$inferSelect;
+
+/**
+ * Conversations, newest first.
+ *
+ * Read for two different jobs: the ones with a lead attached are sales
+ * context, and the ones without are the backlog of questions Jessica could
+ * not answer well — which is the queue for the knowledge base.
+ */
+export async function listChatSessions(): Promise<ChatRow[]> {
+  await requireAdmin();
+  const db = getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(schema.chatSessions)
+    .orderBy(desc(schema.chatSessions.createdAt))
+    .limit(200);
+}

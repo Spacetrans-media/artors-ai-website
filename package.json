@@ -13,8 +13,9 @@
     "seed:glossary": "node --env-file-if-exists=.env.local scripts/seed-glossary.mjs",
     "seed:insights": "node --env-file-if-exists=.env.local scripts/seed-insights.mjs",
     "seed:consulting": "node --env-file-if-exists=.env.local scripts/seed-consulting.mjs",
-    "seed:all": "npm run seed:glossary && npm run seed:insights && npm run seed:consulting",
-    "mail:test": "node --env-file-if-exists=.env.local scripts/test-mail.mjs"
+    "seed:all": "npm run seed:glossary && npm run seed:insights && npm run seed:consulting && npm run seed:kb",
+    "mail:test": "node --env-file-if-exists=.env.local scripts/test-mail.mjs",
+    "seed:kb": "node --env-file-if-exists=.env.local scripts/seed-kb.mjs"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",

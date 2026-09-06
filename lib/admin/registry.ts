@@ -148,7 +148,19 @@ const teamSchema = z.object({
   published: bool,
 });
 
+const kbSchema = z.object({
+  question: z.string().trim().min(1).max(300),
+  answer: z.string().trim().min(1).max(4000),
+  keywords: optionalText(400),
+  category: optionalText(80),
+  sortOrder,
+  published: bool,
+});
+
 export const REGISTRY = {
+  // No revalidate: Jessica reads this table on every request rather than from
+  // a rendered page, so an edit is live as soon as it is saved.
+  kb: { table: schema.kbEntries, schema: kbSchema, revalidate: [] },
   clients: { table: schema.clients, schema: clientsSchema, revalidate: ["/"] },
   caseStudies: { table: schema.caseStudies, schema: caseStudiesSchema, revalidate: ["/work"] },
   testimonials: { table: schema.testimonials, schema: testimonialsSchema, revalidate: ["/"] },

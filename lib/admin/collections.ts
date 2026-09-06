@@ -36,7 +36,8 @@ export type CollectionKey =
   | "testimonials"
   | "team"
   | "insights"
-  | "glossary";
+  | "glossary"
+  | "kb";
 
 export type CollectionSpec = {
   key: CollectionKey;
@@ -65,6 +66,56 @@ const PUBLISH_FIELDS: Field[] = [
 ];
 
 export const COLLECTIONS: Record<CollectionKey, CollectionSpec> = {
+  kb: {
+    key: "kb",
+    href: "/admin/kb",
+    title: "Jessica's knowledge",
+    singular: "Answer",
+    blurb:
+      "What Jessica tells visitors. The site's own pages — services, pricing, FAQ, glossary — she already reads directly, so put here only what is NOT on a page: the awkward questions people actually ask in a chat window.",
+    columns: ["question", "category", "published"],
+    fields: [
+      {
+        name: "question",
+        label: "Question",
+        type: "text",
+        required: true,
+        placeholder: "Do I own the code you build?",
+        help: "Write it the way a visitor would type it, not as a heading. She finds this by matching their words against yours.",
+      },
+      {
+        name: "answer",
+        label: "Answer",
+        type: "textarea",
+        required: true,
+        help: "Two to five sentences, in her voice: plain, warm, no marketing. Never put a price here — the site does not publish one.",
+      },
+      {
+        name: "keywords",
+        label: "Other ways people ask it",
+        type: "text",
+        placeholder: "cost, pricing, rate, kitna, budget",
+        help: "Comma-separated. The cheapest fix when she misses a question: add the words the visitor actually used.",
+      },
+      {
+        name: "category",
+        label: "Category",
+        type: "select",
+        options: [
+          { value: "about", label: "About Artors" },
+          { value: "services", label: "Services" },
+          { value: "pricing", label: "Pricing and commercials" },
+          { value: "process", label: "How we work" },
+          { value: "trust", label: "Trust and objections" },
+          { value: "technical", label: "Technical" },
+          { value: "support", label: "Support and aftercare" },
+        ],
+        help: "Grouping for this table only. It does not affect what she answers.",
+      },
+      ...PUBLISH_FIELDS,
+    ],
+  },
+
   clients: {
     key: "clients",
     href: "/admin/clients",

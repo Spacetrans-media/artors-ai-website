@@ -221,7 +221,7 @@ export const glossaryTerms = mysqlTable(
 );
 
 /**
- * The website-agent demo — docs/DEMO.md.
+ * The website-agent demo.
  *
  * Two tables, both there to keep the demo cheap and safe rather than to store
  * anything of ours. A crawl is cached per domain so the tenth person trying
@@ -282,4 +282,75 @@ export const loginAttempts = mysqlTable(
     at: timestamp("at").defaultNow().notNull(),
   },
   (t) => [index("login_attempts_ip_idx").on(t.ip, t.at)],
+);
+
+/**
+ * Jessica's knowledge base — docs/CHATBOT.md.
+ *
+ * The site's own content (services, pricing, glossary, insights) is already
+ * structured and is read directly, so this table is for what is NOT on a page:
+ * the answers to questions people actually ask in a chat. Ownership of the IP,
+ * what happens if a build goes wrong, whether you work weekends, why there are
+ * no case studies yet.
+ *
+ * `question` is not a title. It is stored in the words a visitor would use,
+ * because retrieval scores on overlap with what they typed — an entry titled
+ * "Engagement model" never matches "do I have to pay upfront?".
+ */
+export const kbEntries = mysqlTable(
+  "kb_entries",
+  {
+    id: id(),
+    /** Phrased as a visitor would ask it. */
+    question: varchar("question", { length: 300 }).notNull(),
+    /** The answer, in Jessica's voice. Plain text, 2–5 sentences. */
+    answer: text("answer").notNull(),
+    /** Grouping for the admin table only; retrieval ignores it. */
+    category: varchar("category", { length: 80 }),
+    /**
+     * Extra words a visitor might use that do not appear in the question or
+     * answer — "cost", "pricing", "kitna", "rate". Comma-separated. This is
+     * the cheapest way to fix a miss without rewriting the entry.
+     */
+    keywords: varchar("keywords", { length: 400 }),
+    sortOrder: int("sort_order").default(0).notNull(),
+    published: boolean("published").default(false).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  (t) => [index("kb_pub_idx").on(t.published, t.sortOrder)],
+);
+
+/**
+ * One row per chat conversation.
+ *
+ * Kept for two reasons, in this order: every unanswered question is a gap in
+ * the knowledge base above, and a conversation that produced a lead is the
+ * context the sales call should open with. `messages` is the whole transcript
+ * as JSON — conversations are small and are always read whole, so a second
+ * table of rows would buy nothing.
+ */
+export const chatSessions = mysqlTable(
+  "chat_sessions",
+  {
+    id: id(),
+    /** Client-generated, stored in sessionStorage. Not a security boundary. */
+    sessionKey: varchar("session_key", { length: 64 }).notNull(),
+    ip: varchar("ip", { length: 64 }),
+    userAgent: varchar("user_agent", { length: 256 }),
+    /** Where the conversation started, for attribution. */
+    sourcePath: varchar("source_path", { length: 200 }),
+    messages: json("messages").$type<{ role: "user" | "assistant"; content: string }[]>(),
+    turns: int("turns").default(0).notNull(),
+    /** Set when the conversation produced a row in `leads`. */
+    leadId: bigint("lead_id", { mode: "number", unsigned: true }),
+    /** What the visitor asked for: a callback, a meeting, or neither. */
+    intent: mysqlEnum("intent", ["none", "callback", "meeting"]).default("none").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex("chat_sessions_key").on(t.sessionKey),
+    index("chat_sessions_created_idx").on(t.createdAt),
+  ],
 );

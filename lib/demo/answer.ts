@@ -1,31 +1,17 @@
 import "server-only";
 
-/**
- * The demo's model call.
- *
- * Provider-swappable, the same decision BigLead made and for the same reason:
- * the model will change twice a year and nothing else should have to. Chosen
- * by DEMO_PROVIDER, defaulting to whichever key is present.
- *
- *   anthropic  ANTHROPIC_API_KEY   best quality
- *   gemini     GEMINI_API_KEY      has a genuinely free tier — fine for a demo
- *   openai     OPENAI_API_KEY      and ANY OpenAI-compatible endpoint
- *   mock       none                canned replies; exercises the whole pipeline
- *
- * The openai path is deliberately the widest door. Groq, Together, Fireworks,
- * OpenRouter, DeepSeek, vLLM and local Ollama or LM Studio all speak the same
- * /chat/completions shape, so pointing DEMO_BASE_URL at any of them works
- * without another adapter. One provider, most of the market.
- *
- * MOCK is not a placeholder to be removed. It is how the crawler, the caps,
- * the rate limiting and the UI get tested without spending anything, and it is
- * what the page falls back to if a key is ever missing in production — a demo
- * that degrades to something honest beats one that 500s.
- */
-
+import { complete, providerName, type ChatMessage } from "@/lib/ai/provider";
 import { retrieve } from "./retrieve";
 
-export type ChatMessage = { role: "user" | "assistant"; content: string };
+export type { ChatMessage };
+
+/**
+ * The demo's answer.
+ *
+ * Model plumbing lives in lib/ai/provider.ts; what belongs here is the one
+ * rule that makes this demo worth showing — answer only from the visitor's own
+ * pages — and an honest fallback for when no key is configured.
+ */
 
 const SYSTEM = `You are a website assistant for the business described in the CONTEXT below.
 
@@ -39,22 +25,6 @@ Rules, in order:
    no marketing adjectives.
 5. Never mention the CONTEXT, the crawl, or that you are an AI model.`;
 
-type Provider = "anthropic" | "gemini" | "openai" | "mock";
-
-function providerName(): Provider {
-  const forced = process.env.DEMO_PROVIDER?.toLowerCase();
-  if (forced === "anthropic" || forced === "gemini" || forced === "openai" || forced === "mock") {
-    return forced;
-  }
-  if (process.env.ANTHROPIC_API_KEY) return "anthropic";
-  if (process.env.OPENAI_API_KEY) return "openai";
-  if (process.env.GEMINI_API_KEY) return "gemini";
-  // A self-hosted endpoint often needs no key at all, so the base URL alone
-  // is enough to say "there is a model here".
-  if (process.env.DEMO_BASE_URL) return "openai";
-  return "mock";
-}
-
 export function activeProvider(): string {
   return providerName();
 }
@@ -64,8 +34,6 @@ export async function answer(
   messages: ChatMessage[],
   siteName: string,
 ): Promise<string> {
-  const provider = providerName();
-
   // Only the passages that bear on this question. Sending the whole crawl on
   // every turn burns a free tier's per-minute token budget on a single answer,
   // and buries the relevant sentence in navigation text.
@@ -73,87 +41,15 @@ export async function answer(
   const relevant = retrieve(context, question);
   const system = `${SYSTEM}\n\nCONTEXT — the website of ${siteName}:\n\n${relevant}`;
 
+  if (providerName() === "mock") return viaMock(context, messages);
+
   try {
-    if (provider === "anthropic") return await viaAnthropic(system, messages);
-    if (provider === "gemini") return await viaGemini(system, messages);
-    if (provider === "openai") return await viaOpenAiCompatible(system, messages);
-    return viaMock(context, messages);
+    const reply = await complete(system, messages, { maxTokens: 400 });
+    return reply || "No answer came back.";
   } catch (e) {
-    console.error("[demo:provider-failed]", provider, e);
+    console.error("[demo:provider-failed]", providerName(), e);
     return "Something went wrong reaching the model. Try again in a moment.";
   }
-}
-
-async function viaAnthropic(system: string, messages: ChatMessage[]): Promise<string> {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-api-key": process.env.ANTHROPIC_API_KEY!,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: process.env.DEMO_MODEL || "claude-sonnet-5",
-      max_tokens: 400,
-      // The context is the same on every turn, so caching it makes the second
-      // and later questions in a conversation much cheaper.
-      system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }],
-      messages,
-    }),
-  });
-  if (!res.ok) throw new Error(`anthropic ${res.status}: ${await res.text()}`);
-  const json = await res.json();
-  return json.content?.[0]?.text?.trim() || "No answer came back.";
-}
-
-async function viaGemini(system: string, messages: ChatMessage[]): Promise<string> {
-  const model = process.env.DEMO_MODEL || "gemini-flash-latest";
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`,
-    {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: system }] },
-        contents: messages.map((m) => ({
-          role: m.role === "assistant" ? "model" : "user",
-          parts: [{ text: m.content }],
-        })),
-        generationConfig: { maxOutputTokens: 400, temperature: 0.3 },
-      }),
-    },
-  );
-  if (!res.ok) throw new Error(`gemini ${res.status}: ${await res.text()}`);
-  const json = await res.json();
-  return json.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "No answer came back.";
-}
-
-/**
- * Any OpenAI-compatible /chat/completions endpoint.
- *
- * DEMO_BASE_URL retargets it: https://api.groq.com/openai/v1,
- * https://openrouter.ai/api/v1, http://localhost:11434/v1 for Ollama, and so
- * on. Only the base URL, the key and the model name change.
- */
-async function viaOpenAiCompatible(system: string, messages: ChatMessage[]): Promise<string> {
-  const base = (process.env.DEMO_BASE_URL || "https://api.openai.com/v1").replace(/[/]+$/, "");
-  const key = process.env.OPENAI_API_KEY;
-  const res = await fetch(`${base}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      ...(key ? { authorization: `Bearer ${key}` } : {}),
-    },
-    body: JSON.stringify({
-      model: process.env.DEMO_MODEL || "gpt-4o-mini",
-      max_tokens: 400,
-      temperature: 0.3,
-      messages: [{ role: "system", content: system }, ...messages],
-    }),
-  });
-  if (!res.ok) throw new Error(`openai-compatible ${res.status}: ${await res.text()}`);
-  const json = await res.json();
-  return json.choices?.[0]?.message?.content?.trim() || "No answer came back.";
 }
 
 /**
@@ -161,6 +57,11 @@ async function viaOpenAiCompatible(system: string, messages: ChatMessage[]): Pro
  * and still useful: a keyword lookup over the crawled text, returning the
  * sentence that best matches. It proves the crawl worked and the plumbing is
  * connected, and it says so.
+ *
+ * MOCK is not a placeholder to be removed. It is how the crawler, the caps,
+ * the rate limiting and the UI get tested without spending anything, and it is
+ * what the page falls back to if a key is ever missing in production — a demo
+ * that degrades to something honest beats one that 500s.
  */
 function viaMock(context: string, messages: ChatMessage[]): string {
   const question = messages.filter((m) => m.role === "user").pop()?.content ?? "";
