@@ -7,6 +7,7 @@ import FaqBlock from "@/components/content/FaqBlock";
 import Button from "@/components/ui/Button";
 import MissedCallCalculator from "@/components/tools/MissedCallCalculator";
 import AutomationRoiCalculator from "@/components/tools/AutomationRoiCalculator";
+import WebsiteAgentDemo from "@/components/demo/WebsiteAgentDemo";
 import { faqSchema, ORG_ID } from "@/lib/schema";
 import { trail } from "@/lib/seo/breadcrumbs";
 import { absoluteUrl } from "@/lib/seo/site";
@@ -93,11 +94,9 @@ export default async function ToolPage({ params }: PageProps<"/tools/[slug]">) {
         <div className="shell">
           <p className={`${t.calcIntro} float-in`}>{tool.intro}</p>
           <div className="float-in">
-            {tool.component === "missed-call" ? (
-              <MissedCallCalculator />
-            ) : (
-              <AutomationRoiCalculator />
-            )}
+            {tool.component === "missed-call" && <MissedCallCalculator />}
+            {tool.component === "automation-roi" && <AutomationRoiCalculator />}
+            {tool.component === "website-agent" && <WebsiteAgentDemo />}
           </div>
 
           <div className={t.calcCta}>

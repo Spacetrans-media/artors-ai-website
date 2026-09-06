@@ -16,7 +16,7 @@
 export type Tool = {
   slug: string;
   /** The interactive component to mount. */
-  component: "missed-call" | "automation-roi";
+  component: "missed-call" | "automation-roi" | "website-agent";
   title: string;
   /** Browser + search title, kept under 60 characters. */
   metaTitle: string;
@@ -31,6 +31,72 @@ export type Tool = {
 };
 
 export const tools: Tool[] = [
+  {
+    slug: "website-agent",
+    component: "website-agent",
+    title: "Build an AI agent for your website",
+    metaTitle: "Free AI Website Agent Demo | Artors",
+    metaDescription:
+      "Paste your website address and talk to an AI agent that has read your own pages. No sign-up, no trial, nothing stored — it takes about thirty seconds.",
+    directAnswer:
+      "To see whether an AI agent would work on your website, point one at your own pages rather than a demo script. Enter your address below and this reads a handful of your public pages, then answers questions about your business the way a visitor would ask them — in about thirty seconds, with no sign-up.",
+    intro:
+      "Most AI demos answer questions about a fictional company. This one answers questions about yours. Enter your address, give it half a minute, then ask it what a customer would ask.",
+    body: `## What it just did
+
+Four steps, and none of them are clever:
+
+1. **Fetched your homepage** and checked your robots.txt first — if you ask crawlers to stay out of a section, we stayed out.
+2. **Followed your internal links**, shallowest first, because /about and /services describe a business better than a 2019 blog post does.
+3. **Stripped the markup** down to the readable text.
+4. **Handed that text to a language model** with one instruction: answer only from this, and admit it when the answer is not there.
+
+That last rule is the whole thing. A model asked about your delivery radius without being given your delivery radius will invent one, confidently. Grounding is what separates a system you can put in front of customers from one you cannot.
+
+## Why the answers are thinner than the real thing
+
+This demo reads about a dozen pages and forgets everything afterwards. A deployed agent knows your whole site, your price list, your stock, your calendar — and it can act: book the appointment, raise the ticket, write the enquiry into your CRM.
+
+The gap between them is not model quality. It is connections.
+
+## If the demo came back empty
+
+That happens with sites rendered entirely in JavaScript. The crawler sees an empty shell where a visitor sees a page.
+
+Worth knowing, because **search engines and AI assistants see roughly what our crawler saw.** If we found nothing readable, that is a discoverability problem you had before today, and it is worth fixing regardless of whether you ever buy an AI agent.
+
+## What we did not do
+
+No account, no email gate, no card. We did not store your pages beyond a short cache, and we did not read anything your robots.txt asked us to leave alone.`,
+    faq: [
+      {
+        q: "Do you store my website content?",
+        a: "Only briefly, as a cache, so that trying the same site again does not mean crawling it a second time. It is public content from your own pages, and it is not used for anything else.",
+      },
+      {
+        q: "Why did it only read a few pages?",
+        a: "The demo caps the crawl deliberately — it is meant to prove the idea in thirty seconds, not to index your site. A real deployment reads everything and keeps it up to date.",
+      },
+      {
+        q: "It could not read my site. Why?",
+        a: "Usually one of two reasons: the site is rendered entirely in JavaScript, so a crawler sees an empty page, or the robots.txt asks crawlers not to read it. The first is worth fixing — search engines see much the same thing.",
+      },
+      {
+        q: "Do you honour robots.txt?",
+        a: "Yes. We read it before anything else and skip whatever it disallows. Plenty of tools in this category do not; we publish a security page, so we do.",
+      },
+      {
+        q: "Can the real one do more than answer questions?",
+        a: "That is the point of it. A deployed agent books appointments, qualifies enquiries against your criteria, routes to the right person and writes the result into your CRM. Answering questions is the easy part.",
+      },
+    ],
+    related: [
+      { label: "Conversational AI — voice and chat", href: "/services/conversational-ai" },
+      { label: "What is retrieval-augmented generation?", href: "/glossary/rag" },
+      { label: "AI agent, chatbot or automation: which do you need?", href: "/insights/ai-agent-chatbot-or-automation" },
+    ],
+  },
+
   {
     slug: "missed-call-cost-calculator",
     component: "missed-call",

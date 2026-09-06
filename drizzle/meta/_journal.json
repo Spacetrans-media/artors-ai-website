@@ -22,6 +22,13 @@
       "when": 1788263895630,
       "tag": "0002_wild_mister_sinister",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1788670671242,
+      "tag": "0003_wonderful_human_torch",
+      "breakpoints": true
     }
   ]
 }

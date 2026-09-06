@@ -220,6 +220,49 @@ export const glossaryTerms = mysqlTable(
   ],
 );
 
+/**
+ * The website-agent demo — docs/DEMO.md.
+ *
+ * Two tables, both there to keep the demo cheap and safe rather than to store
+ * anything of ours. A crawl is cached per domain so the tenth person trying
+ * the same site costs nothing, and a session row caps how much any one visitor
+ * can spend of our model budget.
+ */
+export const demoCrawls = mysqlTable(
+  "demo_crawls",
+  {
+    id: id(),
+    /** Bare host, lowercased — the cache key. */
+    domain: varchar("domain", { length: 255 }).notNull(),
+    url: varchar("url", { length: 500 }).notNull(),
+    title: varchar("title", { length: 300 }),
+    /** Extracted text from the pages we were allowed to read. */
+    content: text("content"),
+    pages: int("pages").default(0).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  (t) => [uniqueIndex("demo_crawls_domain_key").on(t.domain)],
+);
+
+/**
+ * One row per visitor per domain. Doubles as a lead signal: someone who
+ * pointed this at their own company site is further down the funnel than
+ * someone who read a page.
+ */
+export const demoSessions = mysqlTable(
+  "demo_sessions",
+  {
+    id: id(),
+    domain: varchar("domain", { length: 255 }).notNull(),
+    ip: varchar("ip", { length: 64 }).notNull(),
+    messages: int("messages").default(0).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+  },
+  (t) => [index("demo_sessions_ip_idx").on(t.ip, t.createdAt)],
+);
+
 /** Uploaded files. Rows are the index; bytes live under UPLOAD_DIR. */
 export const media = mysqlTable("media", {
   id: id(),
