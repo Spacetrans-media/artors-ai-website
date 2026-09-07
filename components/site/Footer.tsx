@@ -124,7 +124,7 @@ export default function Footer() {
           <p className={s.line}>
             {legalBits.length > 0
               ? legalBits.join(" · ")
-              : `${company.name} · AI Agency · ${company.address.city}, working across India`}
+              : `${company.name} · Agentic AI · ${company.address.city}, working remotely worldwide`}
           </p>
           <p className={s.line}>
             © {new Date().getFullYear()} {company.name}

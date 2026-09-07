@@ -51,9 +51,12 @@ export const company: Company = {
   gstin: "",
   cin: "",
 
-  // ---- Address. City is safe to state; the rest waits for the real one. --
+  // ---- Address. Supplied 2026-09-06; shares the Spacetrans premises. -----
+  // postalCode is still blank on purpose. Nobody has confirmed it, and an
+  // invented PIN on a schema.org PostalAddress is worse than an absent one:
+  // it is the field a verification service checks first.
   address: {
-    line1: "",
+    line1: "4th Floor, Sapphire Mall",
     line2: "",
     city: "Gurugram",
     state: "Haryana",
@@ -61,9 +64,9 @@ export const company: Company = {
     country: "India",
   },
 
-  // ---- Contact. Only the mailbox is confirmed. ---------------------------
-  phone: "",
-  whatsapp: "",
+  // ---- Contact. Supplied 2026-09-06. -------------------------------------
+  phone: "+919599334008",
+  whatsapp: "919599334008",
   email: "ai@artors.in",
   linkedin: "",
 
