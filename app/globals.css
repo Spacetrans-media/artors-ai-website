@@ -458,3 +458,34 @@ html {
     scroll-behavior: auto;
   }
 }
+
+/* ============================================================
+   PINNED SECTIONS — no horizontal scrollbar, ever.
+
+   ScrollTrigger writes an inline pixel width onto every pinned
+   section and onto the .pin-spacer it wraps it in, captured at
+   the width the page was set up at. Narrow the window and those
+   values are stale: the section keeps its old width, hangs past
+   the viewport, and the page grows a horizontal scrollbar.
+
+   PageFx re-measures on a ResizeObserver, which is the actual
+   fix. This is the guarantee underneath it — it needs no
+   JavaScript, so it also covers the frames between a resize and
+   the refresh, and any case where the refresh does not run.
+
+   max-width resolves against the containing block, which for a
+   pinned (position: fixed) section is the viewport. Capping at
+   100% is therefore exactly right in both states, and it never
+   fights the inline width unless that width is too large.
+
+   !important is load-bearing on the child. The pinned element is
+   a section carrying its own module CSS as well as the width
+   ScrollTrigger writes inline, and without it the cap silently
+   loses — measured: the spacer clamped to 845px while the
+   section inside it stayed at a stale 1265px.
+   ============================================================ */
+
+.pin-spacer,
+.pin-spacer > * {
+  max-width: 100% !important;
+}

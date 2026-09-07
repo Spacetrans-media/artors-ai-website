@@ -41,6 +41,44 @@ export default function PageFx() {
       const mm = gsap.matchMedia();
       const MOTION = "(prefers-reduced-motion: no-preference)";
 
+      /**
+       * Re-measure the pins when the viewport WIDTH changes.
+       *
+       * Pinning makes ScrollTrigger write an inline width onto the pinned
+       * section and onto the .pin-spacer it wraps it in. Those are absolute
+       * pixel values captured at setup. Narrow the window afterwards and
+       * nothing re-measures them: the section stays at its old width, sticks
+       * out past the viewport, and the page grows a horizontal scrollbar that
+       * has no business being there.
+       *
+       * Height is deliberately ignored. Mobile browsers fire resize every time
+       * the address bar slides away, and refreshing the pins on each of those
+       * would be both pointless and visibly janky.
+       */
+      let lastWidth = document.documentElement.clientWidth;
+      let frame = 0;
+
+      const refreshIfWidthChanged = () => {
+        const width = document.documentElement.clientWidth;
+        if (width === lastWidth) return;
+        lastWidth = width;
+        cancelAnimationFrame(frame);
+        frame = requestAnimationFrame(() => ScrollTrigger.refresh());
+      };
+
+      /**
+       * A ResizeObserver rather than the resize event, and clientWidth rather
+       * than innerWidth.
+       *
+       * The observer fires on anything that actually changes the layout box —
+       * a dragged window, a rotated phone, devtools docking, a scrollbar
+       * appearing — including cases that never emit a window resize. And
+       * clientWidth is what the layout is really measured against, while
+       * innerWidth includes the scrollbar and does not always track.
+       */
+      const observer = new ResizeObserver(refreshIfWidthChanged);
+      observer.observe(document.documentElement);
+
       /** Elements owned by a dedicated branch — generic reveals skip them. */
       const isOwned = (el: HTMLElement) =>
         el.dataset.fx === "flowcol" ||
@@ -311,6 +349,12 @@ export default function PageFx() {
         });
         return () => cleanups.forEach((fn) => fn());
       });
+
+      // useGSAP reverts everything it created; the window listeners are ours.
+      return () => {
+        cancelAnimationFrame(frame);
+        observer.disconnect();
+      };
     },
     { scope: ref }
   );
