@@ -23,11 +23,17 @@ export const metadata: Metadata = {
   // which crawlers ignore.
   metadataBase: new URL(SITE_URL),
   alternates: { canonical: "/" },
-  // Trimmed from 65 to 53 characters for the <=60 target. Same claim, same
-  // keywords, no positioning change.
-  title: "Artors | AI Agency in Gurugram That Grows Your Numbers",
+  /**
+   * 54 characters, inside the <=60 target.
+   *
+   * Leads with "Agentic AI" because that is the term buyers are now searching
+   * and the one this site is being positioned to own. No country in the title:
+   * clients are targeted globally, and "Gurugram" in a 60-character title
+   * spends a fifth of it telling most of the world the wrong thing.
+   */
+  title: "Agentic AI & Multi-Agent Systems for Business | Artors",
   description:
-    "Artors is an AI agency in Gurugram building automation, voice agents, chatbots, content engines and analytics that add revenue, cut operating cost, and give your team its hours back. Any industry, across India. Live in days.",
+    "Artors builds agentic AI for business: teams of AI agents that handle sales, support, operations and reporting end to end, so revenue goes up, cost comes down and your team gets its hours back. Based in Gurugram, working remotely worldwide. Live in days.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -65,8 +65,11 @@ export function organizationSchema(founders: TeamMember[] = []): Json {
     legalName: company.legalName,
     url: SITE_URL,
     description:
-      "AI agency in Gurugram building automation, AI agents, voice and chat systems that move revenue, cost and hours for businesses across India.",
-    areaServed: { "@type": "Country", name: "India" },
+      "Agentic AI company building multi-agent systems for business: teams of AI agents that handle sales, support, operations and reporting end to end. Based in Gurugram, India, working remotely with clients worldwide.",
+    // Country was too narrow once clients are targeted globally. A real
+    // address stays below as a trust signal; it is not a limit on who we work
+    // with, and areaServed is the field that says so to a crawler.
+    areaServed: { "@type": "AdministrativeArea", name: "Worldwide" },
     /**
      * The subjects this organisation is about.
      *
@@ -76,9 +79,12 @@ export function organizationSchema(founders: TeamMember[] = []): Json {
      * pillars so it cannot drift from what the site actually sells.
      */
     knowsAbout: [
+      "Agentic AI",
+      "Multi-agent systems",
+      "AI agent orchestration",
       ...pillars.map((p) => p.title),
       "Hindi and Hinglish voice AI",
-      "AI automation for Indian businesses",
+      "AI automation for business",
       "DPDP Act compliance for AI systems",
     ],
     hasOfferCatalog: {
@@ -111,7 +117,7 @@ export function organizationSchema(founders: TeamMember[] = []): Json {
       contactType: "sales",
       email: company.email,
       telephone: company.phone,
-      areaServed: "IN",
+      areaServed: "Worldwide",
       availableLanguage: ["en", "hi"],
     }),
     // Tax identifiers only when real; an empty one reads as a fake business.
@@ -144,7 +150,7 @@ export function serviceSchema(input: {
     url: absoluteUrl(input.path),
     serviceType: input.name,
     provider: { "@id": ORG_ID },
-    areaServed: { "@type": "Country", name: "India" },
+    areaServed: { "@type": "AdministrativeArea", name: "Worldwide" },
   });
 }
 

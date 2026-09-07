@@ -40,7 +40,7 @@ export async function GET() {
     line("Name", company.name),
     line("Legal entity", company.legalName),
     line("Based in", addressLine()),
-    line("Serves", "Businesses across India"),
+    line("Serves", "Businesses worldwide, remotely"),
     line("Contact", company.email),
     line("Phone", company.phone),
     line("LinkedIn", company.linkedin),
@@ -48,9 +48,12 @@ export async function GET() {
 
   const body = `# ${company.name}
 
-> An AI agency in Gurugram, India. Artors builds AI systems that move a business
-> outcome — revenue added, cost removed, hours returned — rather than selling AI
-> for its own sake. Work spans process automation, custom AI agents, voice and
+> An agentic AI company based in Gurugram, India, working remotely worldwide.
+> Artors builds multi-agent systems for business: teams of AI agents that handle
+> sales, support, operations and reporting end to end, rather than single
+> chatbots that answer questions. Every engagement is measured against a
+> business outcome — revenue added, cost removed, hours returned — not against
+> having deployed AI. Work spans process automation, custom AI agents, voice and
 > chat systems built for Hindi and Hinglish, marketing and content systems, and
 > AI consulting.
 

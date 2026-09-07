@@ -9,18 +9,38 @@
  */
 export type SubSegment = { text: string; em?: boolean };
 
+/**
+ * Positioning note, 2026-09-06 — read before editing this file.
+ *
+ * The hero was repositioned from "full-service AI agency" to agentic AI and
+ * multi-agent systems. Two constraints shaped the wording, and both still
+ * apply:
+ *
+ *   1. NO SUPERLATIVES. "India's leading" was considered and dropped. Artors
+ *      has no clients or case studies yet, so a superiority claim is exactly
+ *      the kind of thing docs/PLAN.md §2 forbids and the kind ASCI acts on.
+ *      Everything below is a statement of what we build, never of rank.
+ *   2. NO GEOGRAPHIC CEILING. Clients are targeted globally, so the headline
+ *      carries no country. Gurugram stays in the trust line because a real
+ *      address is a trust signal, not a limit — and "remote, worldwide" is a
+ *      statement of availability, not a claim about clients we have served.
+ */
 export const hero = {
   /** Setup line — quiet in tone, full ink. */
-  headlineSetup: "We're not here to impress you with AI.",
+  headlineSetup: "Most AI answers questions.",
   /** Payoff — display size, uppercase, carries the gradient. */
-  headlinePayoff: "We're here to grow your numbers.",
+  headlinePayoff: "Ours runs the work.",
 
   /**
    * Deliberately short. The hero states what we are and what changes;
    * the detail belongs further down the page, not in the first screen.
    */
   sub: [
-    { text: "A full-service AI agency. We build systems that run the repetitive work end to end, so " },
+    { text: "We build " },
+    { text: "agentic AI", em: true },
+    {
+      text: " for business — teams of AI agents that handle sales, support, operations and reporting end to end, so ",
+    },
     { text: "revenue goes up", em: true },
     { text: ", " },
     { text: "cost comes down", em: true },
@@ -32,7 +52,7 @@ export const hero = {
   primaryCta: { label: "Book a Free Strategy Call", href: "/contact" },
   secondaryCta: { label: "See What We Build", href: "/services" },
 
-  trustLine: "Gurugram · Working across India · Live in days",
+  trustLine: "Gurugram, India · Working remotely worldwide · Live in days",
 } as const;
 
 export type LedgerRow = {
