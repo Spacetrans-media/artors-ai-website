@@ -92,6 +92,25 @@ export function hasFullAddress(): boolean {
   return Boolean(company.address.line1);
 }
 
+/**
+ * The number as a person reads it, not as a machine dials it.
+ *
+ * `company.phone` is stored in E.164 because that is what tel: links and
+ * schema.org require, but "+919599334008" printed on a page is a wall of
+ * digits nobody can scan or repeat aloud. On a site with no case studies the
+ * phone number is one of the strongest trust signals available, and an
+ * unreadable one wastes it.
+ *
+ * Indian mobiles are grouped 5-5 after the country code, which is how they are
+ * written everywhere locally. Anything that is not a 10-digit +91 number is
+ * returned untouched rather than mangled by a rule that does not fit it.
+ */
+export function phoneDisplay(): string {
+  const raw = company.phone;
+  const match = /^\+91(\d{5})(\d{5})$/.exec(raw);
+  return match ? `+91 ${match[1]} ${match[2]}` : raw;
+}
+
 export function whatsappUrl(message?: string): string | null {
   if (!company.whatsapp) return null;
   const base = `https://wa.me/${company.whatsapp}`;

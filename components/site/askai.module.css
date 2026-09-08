@@ -1,0 +1,126 @@
+/* ============================================================
+   ASK AN AI
+   Sits at the top of the footer, on a faint grid — the one
+   moment the page invites you to leave it, so it gets its own
+   ground rather than competing with the footer's columns.
+   ============================================================ */
+
+.band {
+  position: relative;
+  padding: 54px 24px 56px;
+  margin-bottom: 48px;
+  text-align: center;
+  border-radius: 20px;
+  background: var(--line-soft);
+  overflow: hidden;
+}
+
+/* The grid, drawn rather than loaded: two repeating-linear-gradients cost
+   nothing and scale to any width. Masked so it fades before the edges and
+   never competes with the type. */
+.band::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    repeating-linear-gradient(to right, var(--line) 0 1px, transparent 1px 68px),
+    repeating-linear-gradient(to bottom, var(--line) 0 1px, transparent 1px 68px);
+  opacity: 0.5;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, #000 30%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, #000 30%, transparent 100%);
+  pointer-events: none;
+}
+
+.title,
+.sub,
+.row {
+  position: relative;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(19px, 2.4vw, 23px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--ink);
+}
+
+.sub {
+  margin: 8px auto 0;
+  max-width: 46ch;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.55;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 20px;
+  font-size: 14.5px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  text-decoration: none;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  transition:
+    border-color var(--dur-btn) var(--ease-btn),
+    color var(--dur-btn) var(--ease-btn),
+    transform var(--dur-btn) var(--ease-btn);
+}
+.pill:hover,
+.pill:focus-visible {
+  color: var(--accent);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+}
+.icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+@media (max-width: 560px) {
+  .band {
+    padding: 40px 18px 42px;
+    margin-bottom: 36px;
+  }
+  /* Full-width stacked pills: three of these wrapped on a phone looks like
+     a broken row rather than a choice. */
+  .row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .pill {
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill {
+    transition: none;
+  }
+  .pill:hover {
+    transform: none;
+  }
+}

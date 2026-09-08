@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import LeadForm from "@/components/lead/LeadForm";
-import { company, addressLine, hasFullAddress, whatsappUrl } from "@/lib/content/company";
+import { company, addressLine, hasFullAddress, whatsappUrl, phoneDisplay } from "@/lib/content/company";
 import l from "@/components/lead/lead.module.css";
 
 export const metadata: Metadata = {
@@ -41,7 +41,7 @@ export default function ContactPage() {
                 <div className={l.directRow}>
                   <dt className={l.directLabel}>Phone</dt>
                   <dd className={l.directValue}>
-                    <a href={`tel:${company.phone}`}>{company.phone}</a>
+                    <a href={`tel:${company.phone}`}>{phoneDisplay()}</a>
                   </dd>
                 </div>
               )}

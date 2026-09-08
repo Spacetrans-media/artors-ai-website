@@ -1,21 +1,52 @@
 /* Footer: quiet close. Sits on paper below the dark CTA band. */
 
 .footer {
-  padding-block: 56px 88px;
+  padding-block: 56px 72px;
+  border-top: 1px solid var(--line);
 }
 
 .inner {
   display: flex;
   flex-direction: column;
-  gap: 40px;
+  gap: 44px;
 }
 
-.top {
+/* ---------- the columns ------------------------------------------------ */
+
+/* The brand column is deliberately wider than the link columns: it carries a
+   sentence, they carry words. Equal columns would leave the pitch wrapping
+   awkwardly beside three short lists. */
+.grid {
+  display: grid;
+  gap: 40px 32px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 620px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .brand {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 960px) {
+  .grid {
+    grid-template-columns: 1.6fr 1fr 1fr 1fr;
+    gap: 48px;
+  }
+  .brand {
+    grid-column: auto;
+  }
+}
+
+.brand {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 28px 48px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+  max-width: 34ch;
 }
 
 .lockup {
@@ -24,31 +55,88 @@
 }
 .lockup img {
   width: auto;
-  height: 52px;
+  height: 46px;
 }
 
-.nav {
+.pitch {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+/* The number gets display weight rather than list weight. On a site with no
+   case studies, a phone somebody actually answers is the strongest trust
+   signal available — burying it in a list wastes it. */
+.phone {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-decoration: none;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 2px;
+  transition:
+    color var(--dur-btn) var(--ease-btn),
+    border-color var(--dur-btn) var(--ease-btn);
+}
+.phone:hover,
+.phone:focus-visible {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.col {
+  min-width: 0;
+}
+
+.colLabel {
+  display: block;
+  margin: 0 0 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.list {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px 24px;
+  flex-direction: column;
+  gap: 9px;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
 .link {
-  text-decoration: none;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 600;
-  letter-spacing: -0.02em;
-  text-transform: uppercase;
-  color: var(--muted);
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  text-decoration: none;
   transition: color var(--dur-btn) var(--ease-btn);
 }
 .link:hover,
 .link:focus-visible {
+  color: var(--accent);
+}
+
+/* ---------- address ---------------------------------------------------- */
+
+.address {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-style: normal;
+  font-size: 13.5px;
+  font-weight: 600;
   color: var(--ink);
 }
+
+/* ---------- bottom bar -------------------------------------------------- */
 
 .bottom {
   display: flex;
@@ -67,69 +155,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .link {
-    transition: none;
-  }
-}
-
-/* ---------- identity signals (phone, address, registration) ---------- */
-
-.contactRow {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 28px 40px;
-  border-top: 1px solid var(--line);
-  padding: 26px 0 28px;
-}
-
-.colLabel {
-  margin: 0 0 10px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.11em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.contactList {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.contactLink {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ink);
-  text-decoration: none;
-  transition: color var(--dur-btn) var(--ease-btn);
-}
-.contactLink:hover,
-.contactLink:focus-visible {
-  color: var(--accent);
-}
-
-.address {
-  margin: 0;
-  max-width: 30ch;
-  font-size: 13px;
-  font-weight: 600;
-  font-style: normal;
-  line-height: 1.55;
-  color: var(--ink);
-}
-
-@media (min-width: 810px) {
-  .contactRow {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .contactLink {
+  .link,
+  .phone {
     transition: none;
   }
 }
